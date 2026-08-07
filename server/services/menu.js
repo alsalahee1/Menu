@@ -21,7 +21,7 @@ function parseTags(raw) {
 function getMenu(restaurantId, { publicOnly = false } = {}) {
   const categories = db
     .prepare(
-      `SELECT id, name, description, icon, sort_order, is_active
+      `SELECT id, name, name_ar, description, description_ar, icon, sort_order, is_active
          FROM categories
         WHERE restaurant_id = ? ${publicOnly ? 'AND is_active = 1' : ''}
         ORDER BY sort_order ASC, name ASC`
@@ -30,8 +30,8 @@ function getMenu(restaurantId, { publicOnly = false } = {}) {
 
   const items = db
     .prepare(
-      `SELECT id, category_id, name, description, price, image_url, is_available,
-              is_featured, prep_minutes, calories, tags, sort_order
+      `SELECT id, category_id, name, name_ar, description, description_ar, price, image_url,
+              is_available, is_featured, prep_minutes, calories, tags, sort_order
          FROM menu_items
         WHERE restaurant_id = ?
         ORDER BY sort_order ASC, name ASC`
@@ -46,7 +46,7 @@ function getMenu(restaurantId, { publicOnly = false } = {}) {
     const placeholders = itemIds.map(() => '?').join(',');
     groups = db
       .prepare(
-        `SELECT id, item_id, name, min_select, max_select, sort_order
+        `SELECT id, item_id, name, name_ar, min_select, max_select, sort_order
            FROM option_groups
           WHERE item_id IN (${placeholders})
           ORDER BY sort_order ASC, id ASC`
@@ -58,7 +58,7 @@ function getMenu(restaurantId, { publicOnly = false } = {}) {
       const gp = groupIds.map(() => '?').join(',');
       options = db
         .prepare(
-          `SELECT id, group_id, name, price_delta, is_available, sort_order
+          `SELECT id, group_id, name, name_ar, price_delta, is_available, sort_order
              FROM options
             WHERE group_id IN (${gp}) ${publicOnly ? 'AND is_available = 1' : ''}
             ORDER BY sort_order ASC, id ASC`
@@ -73,6 +73,7 @@ function getMenu(restaurantId, { publicOnly = false } = {}) {
     optionsByGroup.get(opt.group_id).push({
       id: opt.id,
       name: opt.name,
+      name_ar: opt.name_ar,
       price_delta: opt.price_delta,
       is_available: !!opt.is_available,
     });
@@ -84,6 +85,7 @@ function getMenu(restaurantId, { publicOnly = false } = {}) {
     groupsByItem.get(group.item_id).push({
       id: group.id,
       name: group.name,
+      name_ar: group.name_ar,
       min_select: group.min_select,
       max_select: group.max_select,
       options: optionsByGroup.get(group.id) || [],
@@ -94,7 +96,9 @@ function getMenu(restaurantId, { publicOnly = false } = {}) {
     id: item.id,
     category_id: item.category_id,
     name: item.name,
+    name_ar: item.name_ar,
     description: item.description,
+    description_ar: item.description_ar,
     price: item.price,
     image_url: item.image_url,
     is_available: !!item.is_available,
@@ -110,7 +114,9 @@ function getMenu(restaurantId, { publicOnly = false } = {}) {
     categories: categories.map((c) => ({
       id: c.id,
       name: c.name,
+      name_ar: c.name_ar,
       description: c.description,
+      description_ar: c.description_ar,
       icon: c.icon,
       sort_order: c.sort_order,
       is_active: !!c.is_active,

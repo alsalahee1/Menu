@@ -200,12 +200,13 @@ function shapeOrder(row) {
     )
     .all(row.id);
 
-  return { ...row, items, timeline };
+  return { ...row, online_payments_enabled: !!row.online_payments_enabled, items, timeline };
 }
 
 const ORDER_SELECT = `
   SELECT o.*, t.label AS table_label, t.code AS table_code, r.name AS restaurant_name,
-         r.slug AS restaurant_slug, r.currency AS currency
+         r.name_ar AS restaurant_name_ar, r.slug AS restaurant_slug, r.currency AS currency,
+         r.online_payments_enabled AS online_payments_enabled
     FROM orders o
     LEFT JOIN tables t ON t.id = o.table_id
     JOIN restaurants r ON r.id = o.restaurant_id

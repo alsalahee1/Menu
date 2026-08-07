@@ -12,10 +12,11 @@
     <div class="guest-header-inner">
       <a class="btn btn-ghost btn-icon" href="/" aria-label="Home">🍽</a>
       <div class="grow" style="min-width:0">
-        <div id="r-name" class="strong truncate">Loading…</div>
+        <div id="r-name" class="strong truncate" data-i18n="common.loading">Loading…</div>
         <div id="r-context" class="tiny muted truncate"></div>
       </div>
-      <button id="help-btn" class="btn btn-sm" type="button">Help</button>
+      <span data-lang-switch="compact"></span>
+      <button id="help-btn" class="btn btn-sm" type="button" data-i18n="menu.help">Help</button>
     </div>
   </header>
 
@@ -33,13 +34,14 @@
   <div id="cart-bar" class="cart-bar" hidden>
     <div class="cart-bar-inner">
       <div class="grow">
-        <div id="cart-count" class="small muted">0 items</div>
+        <div id="cart-count" class="small muted"></div>
         <div id="cart-total" class="strong" style="font-size:1.1rem">—</div>
       </div>
-      <button id="view-cart" class="btn btn-primary btn-lg" type="button">View cart</button>
+      <button id="view-cart" class="btn btn-primary btn-lg" type="button" data-i18n="menu.viewCart">View cart</button>
     </div>
   </div>
 
+  <script src="/assets/js/i18n.js"></script>
   <script src="/assets/js/core.js"></script>
   <script src="/assets/js/pages/menu.js"></script>
 </body>

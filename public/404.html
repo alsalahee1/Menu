@@ -11,16 +11,14 @@
   <main style="min-height:100vh;display:grid;place-items:center;padding:24px">
     <div class="center" style="max-width:420px">
       <div style="font-size:3.4rem">🍽️</div>
-      <h1>We could not find that page</h1>
-      <p class="muted">
-        The link may be out of date. If you are trying to order, scan the QR code
-        on your table again — each table has its own code.
-      </p>
+      <h1 data-i18n="notFound.title">We could not find that page</h1>
+      <p class="muted" data-i18n="notFound.body">The link may be out of date.</p>
       <div class="row gap-8" style="justify-content:center">
-        <a class="btn btn-primary" href="/">Go to the home page</a>
-        <a class="btn" href="/orders">My orders</a>
+        <a class="btn btn-primary" href="/" data-i18n="notFound.home">Go to the home page</a>
+        <a class="btn" href="/orders" data-i18n="landing.myOrders">My orders</a>
       </div>
     </div>
   </main>
+  <script src="/assets/js/i18n.js"></script>
 </body>
 </html>

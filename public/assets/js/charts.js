@@ -112,7 +112,7 @@
     const height = options.height || 200;
 
     if (points.length < 2) {
-      return el('div.empty', 'Not enough data for a trend yet.');
+      return el('div.empty', window.I18n.t('rep.notEnoughTrend'));
     }
 
     const tip = tooltip(host);
@@ -205,7 +205,7 @@
     const format = options.format || ((n) => String(n));
     const height = options.height || 190;
 
-    if (!points.length) return el('div.empty', 'No data in this period.');
+    if (!points.length) return el('div.empty', window.I18n.t('rep.noData'));
 
     const tip = tooltip(host);
 
@@ -271,7 +271,7 @@
    */
   function rankedBars(options) {
     const points = (options.data || []).slice(0, options.limit || 10);
-    if (!points.length) return el('div.empty', 'No data in this period.');
+    if (!points.length) return el('div.empty', window.I18n.t('rep.noData'));
 
     const format = options.format || ((n) => String(n));
     const max = Math.max(...points.map((p) => p.value), 1);
@@ -301,7 +301,7 @@
    */
   function segmentedBar(options) {
     const points = (options.data || []).filter((p) => p.value > 0);
-    if (!points.length) return el('div.empty', 'No data in this period.');
+    if (!points.length) return el('div.empty', window.I18n.t('rep.noData'));
 
     const format = options.format || ((n) => String(n));
     const total = points.reduce((sum, p) => sum + p.value, 0);

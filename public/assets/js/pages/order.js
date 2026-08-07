@@ -7,17 +7,17 @@
     el, $, mount, api, money, formatTime, statusLabel, toast, modal, confirmDialog, guard, stream,
   } = window.App;
 
+  const t = (key, params) => window.I18n.t(key, params);
+  const loc = (row, field) => window.I18n.localised(row, field);
+
   const code = (location.pathname.split('/').filter(Boolean)[1] || '').toUpperCase();
 
   // The order of a normal service, used to draw the progress timeline.
-  const FLOW = [
-    { status: 'pending', label: 'Order received', hint: 'Waiting for the restaurant to confirm' },
-    { status: 'accepted', label: 'Confirmed', hint: 'The restaurant has your order' },
-    { status: 'preparing', label: 'Being prepared', hint: 'The kitchen is cooking' },
-    { status: 'ready', label: 'Ready', hint: 'Your food is plated and on its way' },
-    { status: 'served', label: 'Served', hint: 'Enjoy your meal' },
-    { status: 'completed', label: 'Completed', hint: 'Thanks for dining with us' },
-  ];
+  const FLOW = ['pending', 'accepted', 'preparing', 'ready', 'served', 'completed'].map((status) => ({
+    status,
+    get label() { return t(`order.step.${status}`); },
+    get hint() { return t(`order.step.${status}Hint`); },
+  }));
 
   let order = null;
 
@@ -30,9 +30,9 @@
     } catch (error) {
       mount($('#content'), el('div.empty', [
         el('div.empty-icon', '🔍'),
-        el('h2', 'Order not found'),
+        el('h2', t('order.notFound')),
         el('p', error.message),
-        el('a.btn.btn-primary', { href: '/' }, 'Back to home'),
+        el('a.btn.btn-primary', { href: '/' }, t('menu.backHome')),
       ]));
       $('#head-sub').textContent = '';
     }
@@ -44,21 +44,22 @@
         const changed = updated.status !== order.status;
         order = updated;
         render();
-        if (changed) toast(`Order update: ${statusLabel(updated.status)}`, 'success');
+        if (changed) toast(t('order.update', { status: statusLabel(updated.status) }), 'success');
       },
     });
     $('#live-dot').hidden = false;
   }
 
   function render() {
-    document.title = `Order ${order.code} — ${statusLabel(order.status)}`;
-    $('#head-title').textContent = `Order ${order.code}`;
-    $('#head-sub').textContent = `${order.restaurant_name}${order.table_label ? ` · ${order.table_label}` : ' · Takeaway'}`;
+    document.title = `${t('order.title', { code: order.code })} — ${statusLabel(order.status)}`;
+    $('#head-title').textContent = t('order.title', { code: order.code });
+    $('#head-sub').textContent = `${order.restaurant_name}${order.table_label ? ` · ${order.table_label}` : ` · ${t('common.takeaway')}`}`;
 
     mount($('#content'), [
       statusCard(),
       timelineCard(),
       receiptCard(),
+      paymentCard(),
       actionsCard(),
       reviewCard(),
     ].filter(Boolean));
@@ -75,10 +76,10 @@
       el('h1', { style: { marginBottom: '4px' } }, statusLabel(order.status)),
       el('p.muted', { style: { marginBottom: '10px' } },
         cancelled
-          ? (order.cancel_reason || 'This order was cancelled.')
+          ? (order.cancel_reason || t('order.cancelledBody'))
           : (currentStep ? currentStep.hint : '')),
       !cancelled && eta !== null && ['pending', 'accepted', 'preparing'].includes(order.status)
-        ? el('div.badge.badge-brand', `Estimated ${eta} min`)
+        ? el('div.badge.badge-brand', t('order.estimated', { n: eta }))
         : null,
     ]);
   }
@@ -96,7 +97,7 @@
   function timelineCard() {
     if (order.status === 'cancelled') {
       return el('div.card.card-pad.mb-16', [
-        el('h3', 'History'),
+        el('h3', t('order.history')),
         el('ul.timeline', order.timeline.map((event) =>
           el('li.done', [
             el('span.tl-dot', '•'),
@@ -113,7 +114,7 @@
     const reached = new Map(order.timeline.map((event) => [event.status, event.created_at]));
 
     return el('div.card.card-pad.mb-16', [
-      el('h3', 'Progress'),
+      el('h3', t('order.progress')),
       el('ul.timeline', FLOW.map((step, index) => {
         const state = index < currentIndex ? 'done' : index === currentIndex ? 'current' : '';
         return el('li', { class: state }, [
@@ -132,9 +133,9 @@
   function receiptCard() {
     return el('div.card.mb-16', [
       el('div.card-head', [
-        el('h3', 'Receipt'),
+        el('h3', t('order.receipt')),
         el('span.badge', { class: order.payment_status === 'paid' ? 'badge-ok' : 'badge-warn' },
-          order.payment_status === 'paid' ? 'Paid' : 'Unpaid'),
+          order.payment_status === 'paid' ? t('common.paid') : t('common.unpaid')),
       ]),
       el('div.card-body', [
         el('div', order.items.map((line) =>
@@ -151,23 +152,23 @@
           ])
         )),
 
-        order.note ? el('p.small.muted.mt-8', `Order note: ${order.note}`) : null,
+        order.note ? el('p.small.muted.mt-8', t('order.orderNote', { note: order.note })) : null,
 
         el('div.col.gap-4.small.mt-16', [
-          row('Subtotal', order.subtotal),
-          order.service_charge ? row('Service charge', order.service_charge) : null,
-          order.tax ? row('Tax', order.tax) : null,
-          order.discount ? row('Discount', -order.discount) : null,
+          row(t('common.subtotal'), order.subtotal),
+          order.service_charge ? row(t('common.serviceCharge'), order.service_charge) : null,
+          order.tax ? row(t('common.tax'), order.tax) : null,
+          order.discount ? row(t('common.discount'), -order.discount) : null,
           el('hr', { style: { margin: '8px 0' } }),
           el('div.row.between', [
-            el('strong', 'Total'),
+            el('strong', t('common.total')),
             el('strong', { style: { fontSize: '1.1rem' } }, money(order.total, order.currency)),
           ]),
         ]),
 
         el('div.row.between.small.faint.mt-16', [
-          el('span', `Placed ${formatTime(order.placed_at)}`),
-          el('span.mono', order.code),
+          el('span', t('order.placedAt', { time: formatTime(order.placed_at) })),
+          el('span.mono.ltr-inline', order.code),
         ]),
       ]),
     ]);
@@ -177,27 +178,154 @@
     }
   }
 
+  // ------------------------------------------------------------- payment ---
+  /**
+   * Shown only when the restaurant has enabled paying from the table.
+   * `restaurant_online_payments` rides along on the public order payload.
+   */
+  function paymentCard() {
+    if (order.status === 'cancelled') return null;
+
+    if (order.payment_status === 'paid') {
+      return el('div.card.card-pad.mb-16', { style: { background: 'var(--ok-soft)', borderColor: 'transparent' } }, [
+        el('div.row.gap-8', [
+          el('span', { style: { fontSize: '1.4rem' } }, '✅'),
+          el('div', [
+            el('div.strong', { style: { color: 'var(--ok)' } }, t('pay.alreadyPaid')),
+            el('div.small', { style: { color: 'var(--ok)' } }, t('pay.thanks')),
+          ]),
+        ]),
+      ]);
+    }
+
+    if (!order.online_payments_enabled) return null;
+
+    return el('div.card.card-pad.mb-16', [
+      el('div.row.between.wrap.gap-8', [
+        el('div', [
+          el('div.strong', t('pay.amountDue')),
+          el('div', { style: { fontSize: '1.35rem', fontWeight: '680' } }, money(order.total, order.currency)),
+        ]),
+        el('button.btn.btn-primary.btn-lg', { onclick: openPayment }, `💳 ${t('pay.payNow')}`),
+      ]),
+      el('p.tiny.faint', { style: { margin: '10px 0 0' } }, t('pay.orPayAtTable')),
+    ]);
+  }
+
+  const openPayment = guard(async () => {
+    const { intent } = await api.post(`/public/orders/${order.code}/pay`, {}, { anonymous: true });
+
+    if (intent.provider !== 'mock') {
+      // A live provider owns the card fields; this build ships the simulator,
+      // so say so plainly rather than pretending to collect a real card.
+      toast(t('pay.notAvailable'), 'error');
+      return;
+    }
+
+    const handle = modal({
+      title: t('pay.title', { code: order.code }),
+      body: [
+        el('div.card.card-pad.mb-16', { style: { background: 'var(--warn-soft)', borderColor: 'transparent' } },
+          el('div.small', { style: { color: 'var(--warn)' } }, t('pay.simulatorNotice'))),
+
+        el('div.row.between.mb-16', [
+          el('span.muted', t('pay.amountDue')),
+          el('strong', { style: { fontSize: '1.2rem' } }, money(order.total, order.currency)),
+        ]),
+
+        el('form#pay-form', [
+          el('div.field', [
+            el('label', { for: 'pay-card' }, t('pay.cardNumber')),
+            el('input', {
+              id: 'pay-card', type: 'text', inputmode: 'numeric', autocomplete: 'off',
+              maxlength: 23, placeholder: '4242 4242 4242 4242', class: 'ltr',
+              oninput: (event) => {
+                // Group into fours as the guest types.
+                const digits = event.target.value.replace(/\D/g, '').slice(0, 19);
+                event.target.value = digits.replace(/(.{4})/g, '$1 ').trim();
+              },
+            }),
+          ]),
+          el('div.form-grid', [
+            el('div.field', [
+              el('label', { for: 'pay-exp' }, t('pay.expiry')),
+              el('input', { id: 'pay-exp', type: 'text', placeholder: '12 / 30', maxlength: 9, class: 'ltr' }),
+            ]),
+            el('div.field', [
+              el('label', { for: 'pay-cvc' }, t('pay.cvc')),
+              el('input', { id: 'pay-cvc', type: 'text', inputmode: 'numeric', maxlength: 4, placeholder: '123', class: 'ltr' }),
+            ]),
+          ]),
+          el('div.field', [
+            el('label', { for: 'pay-name' }, t('pay.nameOnCard')),
+            el('input', { id: 'pay-name', type: 'text', maxlength: 80, value: order.customer_name || '' }),
+          ]),
+        ]),
+
+        intent.test_cards
+          ? el('div', [
+              el('div.tiny.strong.mb-8', t('pay.testCards')),
+              el('div.col.gap-4', intent.test_cards.map((card) =>
+                el('button.btn.btn-sm.btn-block', {
+                  type: 'button',
+                  style: { justifyContent: 'space-between' },
+                  onclick: () => { $('#pay-card').value = card.number; },
+                }, [el('span.mono.tiny.ltr-inline', card.number), el('span.tiny.faint', card.label)])
+              )),
+            ])
+          : null,
+      ],
+      actions: (h) => [
+        el('button.btn', { onclick: h.close }, t('common.cancel')),
+        el('button.btn.btn-primary.grow', {
+          id: 'pay-submit',
+          onclick: guard(async (event) => {
+            const button = event.currentTarget;
+            button.disabled = true;
+            button.textContent = t('pay.processing');
+            try {
+              const result = await api.post(
+                `/public/payments/${intent.reference}/confirm`,
+                { card_number: $('#pay-card').value },
+                { anonymous: true }
+              );
+              order = result.order;
+              h.close();
+              render();
+              toast(t('pay.success'), 'success');
+            } catch (error) {
+              button.disabled = false;
+              button.textContent = t('pay.payAmount', { amount: money(order.total, order.currency) });
+              throw error;
+            }
+          }),
+        }, t('pay.payAmount', { amount: money(order.total, order.currency) })),
+      ],
+    });
+    return handle;
+  });
+
   function actionsCard() {
     const canCancel = order.status === 'pending';
     const active = !['completed', 'cancelled'].includes(order.status);
 
     return el('div.card.card-pad.mb-16', [
-      el('h3', 'Need something?'),
+      el('h3', t('menu.needSomething')),
       el('div.row.wrap.gap-8', [
-        serviceButton('waiter', '🙋 Call a waiter'),
-        serviceButton('water', '💧 Water'),
-        serviceButton('bill', '🧾 Request the bill'),
+        serviceButton('waiter', `🙋 ${t('menu.callWaiter')}`),
+        serviceButton('water', `💧 ${t('menu.water')}`),
+        serviceButton('bill', `🧾 ${t('menu.requestBill')}`),
         el('a.btn.btn-sm', { href: `/t/${order.restaurant_slug}/${order.table_code || ''}` },
-          '➕ Order more'),
+          `➕ ${t('menu.orderMore')}`),
       ]),
       canCancel
         ? el('div.mt-16', [
-            el('button.btn.btn-danger.btn-sm', { onclick: cancelOrder }, 'Cancel this order'),
-            el('div.tiny.faint.mt-4', 'You can cancel until the restaurant confirms your order.'),
+            el('button.btn.btn-danger.btn-sm', { onclick: cancelOrder }, t('order.cancelThis')),
+            el('div.tiny.faint.mt-4', t('order.cancelHint')),
           ])
         : active
           ? el('p.tiny.faint.mt-16', { style: { marginBottom: 0 } },
-              'The kitchen has started your order — ask a member of staff if you need to change it.')
+              t('order.startedNotice'))
           : null,
     ]);
   }
@@ -215,7 +343,7 @@
             type,
             order_code: order.code,
           }, { anonymous: true });
-          toast('A member of staff has been notified.', 'success');
+          toast(t('menu.staffNotified'), 'success');
         } finally {
           setTimeout(() => { button.disabled = false; }, 8000);
         }
@@ -225,26 +353,26 @@
 
   const cancelOrder = guard(async () => {
     const confirmed = await confirmDialog({
-      title: 'Cancel this order?',
-      message: 'The kitchen will not prepare it. This cannot be undone.',
-      confirmLabel: 'Cancel order',
-      cancelLabel: 'Keep it',
+      title: t('order.cancelTitle'),
+      message: t('order.cancelBody'),
+      confirmLabel: t('board.cancelOrder'),
+      cancelLabel: t('order.keepIt'),
     });
     if (!confirmed) return;
 
     const data = await api.post(`/public/orders/${order.code}/cancel`, { reason: 'Cancelled by guest' }, { anonymous: true });
     order = data.order;
     render();
-    toast('Your order has been cancelled', 'success');
+    toast(t('order.cancelled'), 'success');
   });
 
   function reviewCard() {
     if (!['served', 'completed'].includes(order.status)) return null;
 
     return el('div.card.card-pad', [
-      el('h3', 'How was it?'),
-      el('p.small.muted', 'Your feedback goes straight to the restaurant.'),
-      el('button.btn.btn-primary', { onclick: openReview }, 'Leave a review'),
+      el('h3', t('order.howWasIt')),
+      el('p.small.muted', t('order.feedbackBody')),
+      el('button.btn.btn-primary', { onclick: openReview }, t('order.leaveReview')),
     ]);
   }
 
@@ -256,7 +384,7 @@
       mount(stars, [1, 2, 3, 4, 5].map((value) =>
         el('span', {
           role: 'button',
-          'aria-label': `${value} star${value === 1 ? '' : 's'}`,
+          'aria-label': t('order.stars', { n: value }),
           style: { opacity: value <= rating ? '1' : '.28' },
           onclick: () => { rating = value; paintStars(); },
         }, '★')
@@ -265,16 +393,16 @@
     paintStars();
 
     modal({
-      title: 'Leave a review',
+      title: t('order.leaveReview'),
       body: [
         stars,
         el('div.field.mt-16', [
-          el('label', { for: 'review-comment' }, 'Comment (optional)'),
+          el('label', { for: 'review-comment' }, t('order.comment')),
           el('textarea', { id: 'review-comment', rows: 3, maxlength: 500 }),
         ]),
       ],
       actions: (handle) => [
-        el('button.btn', { onclick: handle.close }, 'Not now'),
+        el('button.btn', { onclick: handle.close }, t('order.notNow')),
         el('button.btn.btn-primary', {
           onclick: guard(async () => {
             await api.post(`/public/orders/${order.code}/review`, {
@@ -282,9 +410,9 @@
               comment: $('#review-comment').value.trim(),
             }, { anonymous: true });
             handle.close();
-            toast('Thank you for your feedback!', 'success');
+            toast(t('order.reviewThanks'), 'success');
           }),
-        }, 'Send review'),
+        }, t('order.sendReview')),
       ],
     });
   }

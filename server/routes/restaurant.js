@@ -6,6 +6,7 @@ const config = require('../config');
 const { db } = require('../db');
 const { getMenu } = require('../services/menu');
 const orderService = require('../services/orders');
+const payments = require('../services/payments');
 const events = require('../lib/events');
 const audit = require('../lib/audit');
 const { hashPassword } = require('../lib/password');
@@ -170,7 +171,7 @@ router.get('/orders/:id', (req, res, next) => {
   try {
     const order = orderService.getOrderById(int(req.params.id, 'id', { required: true }));
     if (!order || order.restaurant_id !== req.restaurantId) throw notFound('Order not found');
-    res.json({ order });
+    res.json({ order, payments: payments.listForOrder(order.id) });
   } catch (err) {
     next(err);
   }
@@ -199,15 +200,32 @@ router.patch('/orders/:id/status', (req, res, next) => {
   }
 });
 
-router.patch('/orders/:id/payment', canAdmin, (req, res, next) => {
+router.patch('/orders/:id/payment', canAdmin, async (req, res, next) => {
   try {
     const id = int(req.params.id, 'id', { required: true });
     ownedOrThrow('orders', id, req.restaurantId, 'Order');
 
+    const nextStatus = oneOf(req.body.payment_status, 'payment_status', ['unpaid', 'paid', 'refunded'], {
+      required: true,
+    });
+
+    // Refunding an order settled online has to go back through the provider,
+    // not just flip a column.
+    if (nextStatus === 'refunded') {
+      const settled = db
+        .prepare("SELECT 1 FROM payments WHERE order_id = ? AND status = 'succeeded'")
+        .get(id);
+      if (settled) {
+        const refunded = await payments.refund(id, req.user);
+        audit.log(req.user, 'order.refunded', {
+          restaurantId: req.restaurantId, entity: 'order', entityId: id,
+        });
+        return res.json({ order: refunded });
+      }
+    }
+
     const order = orderService.setPayment(id, {
-      paymentStatus: oneOf(req.body.payment_status, 'payment_status', ['unpaid', 'paid', 'refunded'], {
-        required: true,
-      }),
+      paymentStatus: nextStatus,
       paymentMethod: oneOf(req.body.payment_method, 'payment_method', ['cash', 'card', 'online'], {
         fallback: null,
       }),
@@ -216,7 +234,7 @@ router.patch('/orders/:id/payment', canAdmin, (req, res, next) => {
     audit.log(req.user, 'order.payment_updated', {
       restaurantId: req.restaurantId, entity: 'order', entityId: id, meta: { status: order.payment_status },
     });
-    res.json({ order });
+    return res.json({ order });
   } catch (err) {
     next(err);
   }
@@ -233,13 +251,16 @@ router.post('/categories', canAdmin, (req, res, next) => {
   try {
     const info = db
       .prepare(
-        `INSERT INTO categories (restaurant_id, name, description, icon, sort_order, is_active)
-         VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO categories (restaurant_id, name, name_ar, description, description_ar,
+                                 icon, sort_order, is_active)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         req.restaurantId,
         str(req.body.name, 'name', { required: true, max: 80 }),
+        str(req.body.name_ar, 'name_ar', { max: 80 }),
         str(req.body.description, 'description', { max: 300 }),
+        str(req.body.description_ar, 'description_ar', { max: 300 }),
         str(req.body.icon, 'icon', { max: 8 }),
         int(req.body.sort_order, 'sort_order', { fallback: 0, min: 0, max: 9999 }),
         bool(req.body.is_active, true) ? 1 : 0
@@ -259,10 +280,13 @@ router.patch('/categories/:id', canAdmin, (req, res, next) => {
     const current = ownedOrThrow('categories', id, req.restaurantId, 'Category');
 
     db.prepare(
-      'UPDATE categories SET name = ?, description = ?, icon = ?, sort_order = ?, is_active = ? WHERE id = ?'
+      `UPDATE categories SET name = ?, name_ar = ?, description = ?, description_ar = ?,
+              icon = ?, sort_order = ?, is_active = ? WHERE id = ?`
     ).run(
       str(req.body.name ?? current.name, 'name', { required: true, max: 80 }),
+      str(req.body.name_ar ?? current.name_ar, 'name_ar', { max: 80 }),
       str(req.body.description ?? current.description, 'description', { max: 300 }),
+      str(req.body.description_ar ?? current.description_ar, 'description_ar', { max: 300 }),
       str(req.body.icon ?? current.icon, 'icon', { max: 8 }),
       int(req.body.sort_order ?? current.sort_order, 'sort_order', { min: 0, max: 9999 }),
       bool(req.body.is_active, !!current.is_active) ? 1 : 0,
@@ -309,7 +333,9 @@ function readItemBody(body, restaurantId, current = null) {
   return {
     category_id: categoryId ?? null,
     name: str(body.name ?? (current && current.name), 'name', { required: true, max: 120 }),
+    name_ar: str(body.name_ar ?? (current && current.name_ar), 'name_ar', { max: 120 }),
     description: str(body.description ?? (current && current.description), 'description', { max: 600 }),
+    description_ar: str(body.description_ar ?? (current && current.description_ar), 'description_ar', { max: 600 }),
     price: num(body.price ?? (current && current.price), 'price', { required: true, min: 0, max: 100000 }),
     image_url: str(body.image_url ?? (current && current.image_url), 'image_url', { max: 500 }),
     is_available: bool(body.is_available, current ? !!current.is_available : true) ? 1 : 0,
@@ -328,10 +354,12 @@ router.post('/items', canAdmin, (req, res, next) => {
     const data = readItemBody(req.body, req.restaurantId);
     const info = db
       .prepare(
-        `INSERT INTO menu_items (restaurant_id, category_id, name, description, price, image_url,
-                                 is_available, is_featured, prep_minutes, calories, tags, sort_order)
-         VALUES (@restaurant_id, @category_id, @name, @description, @price, @image_url,
-                 @is_available, @is_featured, @prep_minutes, @calories, @tags, @sort_order)`
+        `INSERT INTO menu_items (restaurant_id, category_id, name, name_ar, description, description_ar,
+                                 price, image_url, is_available, is_featured, prep_minutes,
+                                 calories, tags, sort_order)
+         VALUES (@restaurant_id, @category_id, @name, @name_ar, @description, @description_ar,
+                 @price, @image_url, @is_available, @is_featured, @prep_minutes,
+                 @calories, @tags, @sort_order)`
       )
       .run({ restaurant_id: req.restaurantId, ...data });
     audit.log(req.user, 'item.created', {
@@ -350,7 +378,8 @@ router.patch('/items/:id', canAdmin, (req, res, next) => {
     const data = readItemBody(req.body, req.restaurantId, current);
 
     db.prepare(
-      `UPDATE menu_items SET category_id=@category_id, name=@name, description=@description, price=@price,
+      `UPDATE menu_items SET category_id=@category_id, name=@name, name_ar=@name_ar,
+              description=@description, description_ar=@description_ar, price=@price,
               image_url=@image_url, is_available=@is_available, is_featured=@is_featured,
               prep_minutes=@prep_minutes, calories=@calories, tags=@tags, sort_order=@sort_order,
               updated_at=datetime('now')
@@ -422,10 +451,11 @@ router.post('/items/:id/option-groups', canAdmin, (req, res, next) => {
     if (minSelect > maxSelect) throw badRequest('"min_select" cannot be greater than "max_select"');
 
     const info = db
-      .prepare('INSERT INTO option_groups (item_id, name, min_select, max_select, sort_order) VALUES (?, ?, ?, ?, ?)')
+      .prepare('INSERT INTO option_groups (item_id, name, name_ar, min_select, max_select, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
       .run(
         itemId,
         str(req.body.name, 'name', { required: true, max: 80 }),
+        str(req.body.name_ar, 'name_ar', { max: 80 }),
         minSelect,
         maxSelect,
         int(req.body.sort_order, 'sort_order', { fallback: 0, min: 0, max: 999 })
@@ -452,10 +482,11 @@ router.post('/option-groups/:id/options', canAdmin, (req, res, next) => {
     const groupId = int(req.params.id, 'id', { required: true });
     ownedGroupOrThrow(groupId, req.restaurantId);
     const info = db
-      .prepare('INSERT INTO options (group_id, name, price_delta, is_available, sort_order) VALUES (?, ?, ?, ?, ?)')
+      .prepare('INSERT INTO options (group_id, name, name_ar, price_delta, is_available, sort_order) VALUES (?, ?, ?, ?, ?, ?)')
       .run(
         groupId,
         str(req.body.name, 'name', { required: true, max: 80 }),
+        str(req.body.name_ar, 'name_ar', { max: 80 }),
         num(req.body.price_delta, 'price_delta', { fallback: 0, min: -10000, max: 10000 }),
         bool(req.body.is_available, true) ? 1 : 0,
         int(req.body.sort_order, 'sort_order', { fallback: 0, min: 0, max: 999 })
@@ -886,6 +917,8 @@ router.get('/settings', (req, res) => {
       ...row,
       accepts_orders: !!row.accepts_orders,
       auto_accept_orders: !!row.auto_accept_orders,
+      online_payments_enabled: !!row.online_payments_enabled,
+      payment_provider: payments.activeProvider(),
       menu_url: `${config.publicBaseUrl}/r/${row.slug}`,
     },
   });
@@ -896,16 +929,20 @@ router.patch('/settings', canAdmin, (req, res, next) => {
     const current = db.prepare('SELECT * FROM restaurants WHERE id = ?').get(req.restaurantId);
 
     db.prepare(
-      `UPDATE restaurants SET name=@name, description=@description, cuisine=@cuisine, logo_url=@logo_url,
+      `UPDATE restaurants SET name=@name, name_ar=@name_ar, description=@description,
+              description_ar=@description_ar, cuisine=@cuisine, logo_url=@logo_url,
               cover_url=@cover_url, phone=@phone, email=@email, address=@address, currency=@currency,
               tax_rate=@tax_rate, service_charge_rate=@service_charge_rate, primary_color=@primary_color,
               accepts_orders=@accepts_orders, auto_accept_orders=@auto_accept_orders,
+              online_payments_enabled=@online_payments_enabled,
               opening_hours=@opening_hours, updated_at=datetime('now')
         WHERE id=@id`
     ).run({
       id: req.restaurantId,
       name: str(req.body.name ?? current.name, 'name', { required: true, max: 120 }),
+      name_ar: str(req.body.name_ar ?? current.name_ar, 'name_ar', { max: 120 }),
       description: str(req.body.description ?? current.description, 'description', { max: 800 }),
+      description_ar: str(req.body.description_ar ?? current.description_ar, 'description_ar', { max: 800 }),
       cuisine: str(req.body.cuisine ?? current.cuisine, 'cuisine', { max: 80 }),
       logo_url: str(req.body.logo_url ?? current.logo_url, 'logo_url', { max: 500 }),
       cover_url: str(req.body.cover_url ?? current.cover_url, 'cover_url', { max: 500 }),
@@ -920,6 +957,7 @@ router.patch('/settings', canAdmin, (req, res, next) => {
       primary_color: str(req.body.primary_color ?? current.primary_color, 'primary_color', { max: 20 }),
       accepts_orders: bool(req.body.accepts_orders, !!current.accepts_orders) ? 1 : 0,
       auto_accept_orders: bool(req.body.auto_accept_orders, !!current.auto_accept_orders) ? 1 : 0,
+      online_payments_enabled: bool(req.body.online_payments_enabled, !!current.online_payments_enabled) ? 1 : 0,
       opening_hours: str(req.body.opening_hours ?? current.opening_hours, 'opening_hours', { max: 400 }),
     });
 

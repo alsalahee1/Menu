@@ -164,10 +164,13 @@
   };
 
   // ------------------------------------------------------------ formatting ---
+  /** The active locale, or the browser default before i18n has loaded. */
+  const locale = () => (window.I18n ? window.I18n.locale : undefined);
+
   function money(amount, currency) {
     const value = Number(amount || 0);
     try {
-      return new Intl.NumberFormat(undefined, {
+      return new Intl.NumberFormat(locale(), {
         style: 'currency',
         currency: currency || 'USD',
         minimumFractionDigits: 2,
@@ -190,31 +193,42 @@
 
   function formatTime(value) {
     const date = parseDate(value);
-    return date ? date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '—';
+    return date ? date.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' }) : '—';
   }
 
   function formatDateTime(value) {
     const date = parseDate(value);
     return date
-      ? date.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      ? date.toLocaleString(locale(), { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       : '—';
   }
 
   function formatDate(value) {
     const date = parseDate(value);
-    return date ? date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '—';
+    return date ? date.toLocaleDateString(locale(), { month: 'short', day: 'numeric' }) : '—';
   }
 
   function timeAgo(value) {
     const date = parseDate(value);
     if (!date) return '—';
     const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
-    if (seconds < 60) return 'just now';
+
+    // Intl.RelativeTimeFormat gives idiomatic phrasing in both languages,
+    // including Arabic's dual and plural forms.
+    let rtf = null;
+    try {
+      rtf = new Intl.RelativeTimeFormat(locale(), { numeric: 'auto' });
+    } catch {
+      rtf = null;
+    }
+    if (!rtf) return `${Math.floor(seconds / 60)}m`;
+
+    if (seconds < 60) return rtf.format(0, 'minute');
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes} min ago`;
+    if (minutes < 60) return rtf.format(-minutes, 'minute');
     const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} h ago`;
-    return `${Math.floor(hours / 24)} d ago`;
+    if (hours < 24) return rtf.format(-hours, 'hour');
+    return rtf.format(-Math.floor(hours / 24), 'day');
   }
 
   /** Whole minutes since a timestamp — drives the kitchen ageing colours. */
@@ -224,17 +238,10 @@
     return Math.max(0, Math.floor((Date.now() - date.getTime()) / 60000));
   }
 
-  const STATUS_LABELS = {
-    pending: 'Awaiting confirmation',
-    accepted: 'Confirmed',
-    preparing: 'Being prepared',
-    ready: 'Ready to serve',
-    served: 'Served',
-    completed: 'Completed',
-    cancelled: 'Cancelled',
-  };
+  const ORDER_STATUSES = ['pending', 'accepted', 'preparing', 'ready', 'served', 'completed', 'cancelled'];
 
-  const statusLabel = (status) => STATUS_LABELS[status] || status;
+  const statusLabel = (status) =>
+    (window.I18n && ORDER_STATUSES.includes(status) ? window.I18n.t(`status.${status}`) : status);
   const statusBadge = (status) =>
     el('span.badge', { class: `status-${status}` }, [el('span.dot'), statusLabel(status)]);
 
@@ -347,7 +354,8 @@
       try {
         return await fn.apply(this, args);
       } catch (error) {
-        toast(error && error.message ? error.message : 'Something went wrong', 'error');
+        const fallback = window.I18n ? window.I18n.t('common.somethingWrong') : 'Something went wrong';
+        toast(error && error.message ? error.message : fallback, 'error');
         return undefined;
       }
     };
@@ -435,7 +443,7 @@
   async function copyText(text) {
     try {
       await navigator.clipboard.writeText(text);
-      toast('Copied to clipboard', 'success');
+      toast(window.I18n ? window.I18n.t('common.copied') : 'Copied to clipboard', 'success');
     } catch {
       toast('Could not copy — select the text manually', 'error');
     }
@@ -451,7 +459,7 @@
     el, $, $$, clear, mount, appendChildren,
     api, auth, viewRestaurant,
     money, formatTime, formatDate, formatDateTime, timeAgo, minutesSince, parseDate,
-    statusLabel, statusBadge, STATUS_LABELS,
+    statusLabel, statusBadge, ORDER_STATUSES,
     toast, modal, confirmDialog, withBusy, guard,
     stream, store, sessionId, copyText, params, debounce,
   };

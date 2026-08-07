@@ -5,12 +5,14 @@
 
   const { el, $, mount, api, auth, viewRestaurant, params } = window.App;
 
+  const t = (key, params) => window.I18n.t(key, params);
+
   const DEMO_ACCOUNTS = [
-    { label: 'Platform admin', email: 'admin@menu.app', password: 'Admin123!' },
-    { label: 'Restaurant owner', email: 'owner@zaytoun.test', password: 'Owner123!' },
-    { label: 'Manager', email: 'manager@zaytoun.test', password: 'Manager123!' },
-    { label: 'Waiter', email: 'waiter@zaytoun.test', password: 'Waiter123!' },
-    { label: 'Kitchen', email: 'kitchen@zaytoun.test', password: 'Kitchen123!' },
+    { label: 'landing.platformAdmin', email: 'admin@menu.app', password: 'Admin123!' },
+    { label: 'staff.role.owner', email: 'owner@zaytoun.test', password: 'Owner123!' },
+    { label: 'staff.role.manager', email: 'manager@zaytoun.test', password: 'Manager123!' },
+    { label: 'staff.role.waiter', email: 'waiter@zaytoun.test', password: 'Waiter123!' },
+    { label: 'staff.role.kitchen', email: 'kitchen@zaytoun.test', password: 'Kitchen123!' },
   ];
 
   mount($('#demo-accounts'), DEMO_ACCOUNTS.map((account) =>
@@ -22,7 +24,7 @@
         $('#password').value = account.password;
         $('#submit').focus();
       },
-    }, [el('span', account.label), el('span.tiny.faint.mono', account.email)])
+    }, [el('span', t(account.label)), el('span.tiny.faint.mono.ltr-inline', account.email)])
   ));
 
   // Already signed in? Skip straight through.
@@ -38,7 +40,7 @@
     const button = $('#submit');
     errorBox.hidden = true;
     button.disabled = true;
-    button.textContent = 'Signing in…';
+    button.textContent = t('login.signingIn');
 
     try {
       const { token, user } = await api.post(
@@ -57,7 +59,7 @@
       errorBox.textContent = error.message;
       errorBox.hidden = false;
       button.disabled = false;
-      button.textContent = 'Sign in';
+      button.textContent = t('common.signIn');
     }
   });
 })();
