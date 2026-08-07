@@ -5,7 +5,11 @@
 
   const { el, mount, api, formatDateTime, timeAgo, modal, debounce } = window.App;
 
-  const shell = window.Shell.boot({ kind: 'admin', title: 'Audit log', roles: ['super_admin'] });
+  const t = (key, params) => window.I18n.t(key, params);
+
+  const loc = (row, field) => window.I18n.localised(row, field);
+
+  const shell = window.Shell.boot({ kind: 'admin', title: t('nav.audit'), roles: ['super_admin'] });
   if (!shell) return;
 
   const state = { action: '', restaurantId: '', logs: [], restaurants: [] };
@@ -14,7 +18,7 @@
   const root = el('div');
   shell.page.append(controls, root);
 
-  shell.setActions([el('button.btn.btn-sm', { onclick: () => load() }, '↻ Refresh')]);
+  shell.setActions([el('button.btn.btn-sm', { onclick: () => load() }, `↻ ${t('common.refresh')}`)]);
 
   const COMMON_ACTIONS = [
     'auth.login', 'order.', 'item.', 'category.', 'table.', 'staff.', 'user.', 'restaurant.', 'settings.', 'lead.',
@@ -25,19 +29,19 @@
       el('select', {
         style: { maxWidth: '200px' },
         onchange: (event) => { state.action = event.target.value; load(); },
-      }, [el('option', { value: '' }, 'All actions'),
+      }, [el('option', { value: '' }, t('adm.allActions')),
           ...COMMON_ACTIONS.map((action) =>
             el('option', { value: action, selected: state.action === action }, action))]),
 
       el('select', {
         style: { maxWidth: '230px' },
         onchange: (event) => { state.restaurantId = event.target.value; load(); },
-      }, [el('option', { value: '' }, 'All restaurants'),
+      }, [el('option', { value: '' }, t('adm.allRestaurants')),
           ...state.restaurants.map((r) =>
             el('option', { value: r.id, selected: String(state.restaurantId) === String(r.id) }, r.name))]),
 
       el('div.grow'),
-      el('span.tiny.faint', 'Newest first · latest 150 entries'),
+      el('span.tiny.faint', t('adm.auditHint')),
     ]));
   }
 
@@ -69,16 +73,16 @@
 
   function render() {
     if (!state.logs.length) {
-      mount(root, el('div.card.empty', [el('div.empty-icon', '🛡️'), el('p', 'No audit entries match these filters.')]));
+      mount(root, el('div.card.empty', [el('div.empty-icon', '🛡️'), el('p', t('adm.noAudit'))]));
       return;
     }
 
     mount(root, el('div.card', [
-      el('div.card-head', [el('h2', 'Activity'), el('span.badge', String(state.logs.length))]),
+      el('div.card-head', [el('h2', t('adm.activity')), el('span.badge', String(state.logs.length))]),
       el('div.table-wrap', el('table.data', [
         el('thead', el('tr', [
-          el('th', 'When'), el('th', 'Actor'), el('th', 'Action'),
-          el('th', 'Entity'), el('th', 'Restaurant'), el('th', ''),
+          el('th', t('adm.when')), el('th', t('adm.actor')), el('th', t('adm.action')),
+          el('th', t('adm.entity')), el('th', t('landing.restaurant')), el('th', ''),
         ])),
         el('tbody', state.logs.map((log) =>
           el('tr', [
@@ -86,9 +90,9 @@
             el('td.small.muted', log.actor_email || '—'),
             el('td', el('span.badge', { class: TONE(log.action) }, log.action)),
             el('td.small.muted', log.entity ? `${log.entity}${log.entity_id ? ` #${log.entity_id}` : ''}` : '—'),
-            el('td.small', log.restaurant_name || el('span.faint', 'Platform')),
+            el('td.small', log.restaurant_name || el('span.faint', t('adm.platformLabel'))),
             el('td.actions', log.meta && log.meta !== '{}'
-              ? el('button.btn.btn-sm.btn-ghost', { onclick: () => showMeta(log) }, 'Details')
+              ? el('button.btn.btn-sm.btn-ghost', { onclick: () => showMeta(log) }, t('common.details'))
               : null),
           ])
         )),
@@ -115,7 +119,7 @@
           },
         }, pretty),
       ],
-      actions: (handle) => [el('button.btn.btn-primary', { onclick: handle.close }, 'Close')],
+      actions: (handle) => [el('button.btn.btn-primary', { onclick: handle.close }, t('common.close'))],
     });
   }
 

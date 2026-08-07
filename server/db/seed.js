@@ -28,8 +28,10 @@ const DEMO = [
   {
     restaurant: {
       name: 'Zaytoun Grill',
+      name_ar: 'مشاوي الزيتون',
       slug: 'zaytoun-grill',
       description: 'Charcoal-grilled kebabs, fresh mezze and stone-baked bread, served all day.',
+      description_ar: 'مشاوي على الفحم، ومازات طازجة، وخبز حجري يُقدَّم طوال اليوم.',
       cuisine: 'Middle Eastern',
       phone: '+1 555 0142',
       email: 'hello@zaytoungrill.test',
@@ -39,6 +41,7 @@ const DEMO = [
       service_charge_rate: 0.1,
       primary_color: '#c9552f',
       plan: 'pro',
+      online_payments_enabled: 1,
       opening_hours: 'Mon–Sun · 11:00 – 23:30',
     },
     staff: [
@@ -51,97 +54,106 @@ const DEMO = [
     categories: [
       {
         name: 'Mezze & Starters',
+        name_ar: 'المازات والمقبلات',
         icon: '🥗',
         description: 'Small plates made to share',
+        description_ar: 'مشوي على الفحم عند الطلب',
+        description_ar: 'أطباق صغيرة للمشاركة',
         items: [
-          { name: 'Hummus Beiruti', price: 6.5, prep: 6, tags: ['vegan'], calories: 320,
+          { name: 'Hummus Beiruti', name_ar: 'حمص بيروتي', description_ar: 'حمص بالطحينة والليمون وزيت الزيتون مع خبز دافئ.', price: 6.5, prep: 6, tags: ['vegan'], calories: 320,
             description: 'Chickpea purée, tahini, lemon, olive oil and warm pita.' },
-          { name: 'Baba Ghanoush', price: 7.0, prep: 6, tags: ['vegan'], calories: 280,
+          { name: 'Baba Ghanoush', name_ar: 'بابا غنوج', description_ar: 'باذنجان مدخّن مخفوق بالطحينة وحبّ الرمان.', price: 7.0, prep: 6, tags: ['vegan'], calories: 280,
             description: 'Smoked aubergine whipped with tahini and pomegranate.' },
-          { name: 'Halloumi Skewers', price: 8.5, prep: 9, tags: ['vegetarian'], calories: 410,
+          { name: 'Halloumi Skewers', name_ar: 'أسياخ حلوم', description_ar: 'حلوم مشوي مع طماطم كرزية وزيت الزعتر.', price: 8.5, prep: 9, tags: ['vegetarian'], calories: 410,
             description: 'Grilled halloumi with cherry tomato and za’atar oil.' },
-          { name: 'Fattoush Salad', price: 7.5, prep: 5, tags: ['vegan', 'fresh'], calories: 210,
+          { name: 'Fattoush Salad', name_ar: 'سلطة فتوش', description_ar: 'خضار مقرمشة بصلصة السماق وخبز محمّص.', price: 7.5, prep: 5, tags: ['vegan', 'fresh'], calories: 210,
             description: 'Crisp greens, sumac dressing and toasted bread shards.' },
-          { name: 'Spicy Muhammara', price: 6.75, prep: 5, tags: ['vegan', 'spicy'], calories: 300,
+          { name: 'Spicy Muhammara', name_ar: 'محمّرة حارّة', description_ar: 'فلفل أحمر مشوي مع الجوز ولمسة حارّة.', price: 6.75, prep: 5, tags: ['vegan', 'spicy'], calories: 300,
             description: 'Roasted red pepper and walnut dip with a chilli kick.' },
         ],
       },
       {
         name: 'From the Grill',
+        name_ar: 'من المشواة',
         icon: '🔥',
         description: 'Charcoal-fired, cooked to order',
+        description_ar: 'مشوي على الفحم عند الطلب',
+        description_ar: 'أطباق صغيرة للمشاركة',
         items: [
-          { name: 'Chicken Shish Taouk', price: 16.5, prep: 18, featured: true, calories: 640,
+          { name: 'Chicken Shish Taouk', name_ar: 'شيش طاووق', description_ar: 'أسياخ دجاج متبّلة مع ثوم ومخللات.', price: 16.5, prep: 18, featured: true, calories: 640,
             description: 'Marinated chicken skewers with garlic toum and pickles.',
             groups: [
-              { name: 'Choose your side', min: 1, max: 1, options: [
-                { name: 'Saffron rice', delta: 0 }, { name: 'Grilled vegetables', delta: 1.5 },
-                { name: 'Fries', delta: 0 }, { name: 'Bulgur pilaf', delta: 1 },
+              { name: 'Choose your side', name_ar: 'اختر الطبق الجانبي', min: 1, max: 1, options: [
+                { name: 'Saffron rice', name_ar: 'رز بالزعفران', delta: 0 }, { name: 'Grilled vegetables', name_ar: 'خضار مشوية', delta: 1.5 },
+                { name: 'Fries', name_ar: 'بطاطا مقلية', delta: 0 }, { name: 'Bulgur pilaf', name_ar: 'برغل', delta: 1 },
               ] },
-              { name: 'Extras', min: 0, max: 4, options: [
-                { name: 'Extra toum', delta: 0.75 }, { name: 'Grilled chilli', delta: 0.5 },
-                { name: 'Double chicken', delta: 6 }, { name: 'Pita basket', delta: 1.5 },
+              { name: 'Extras', name_ar: 'إضافات', min: 0, max: 4, options: [
+                { name: 'Extra toum', name_ar: 'ثومية إضافية', delta: 0.75 }, { name: 'Grilled chilli', name_ar: 'فلفل مشوي', delta: 0.5 },
+                { name: 'Double chicken', name_ar: 'دجاج مضاعف', delta: 6 }, { name: 'Pita basket', name_ar: 'سلة خبز', delta: 1.5 },
               ] },
             ] },
-          { name: 'Lamb Kofta', price: 18.0, prep: 20, featured: true, calories: 780,
+          { name: 'Lamb Kofta', name_ar: 'كفتة الغنم', description_ar: 'لحم غنم مفروم يدوياً مع البقدونس والبصل، مشوي على الفحم.', price: 18.0, prep: 20, featured: true, calories: 780,
             description: 'Hand-minced lamb with parsley and onion, charcoal grilled.',
             groups: [
-              { name: 'Spice level', min: 1, max: 1, options: [
-                { name: 'Mild', delta: 0 }, { name: 'Medium', delta: 0 }, { name: 'Hot', delta: 0 },
+              { name: 'Spice level', name_ar: 'درجة الحرارة', min: 1, max: 1, options: [
+                { name: 'Mild', name_ar: 'خفيف', delta: 0 }, { name: 'Medium', name_ar: 'وسط', delta: 0 }, { name: 'Hot', name_ar: 'حار', delta: 0 },
               ] },
             ] },
-          { name: 'Mixed Grill Platter', price: 29.0, prep: 25, calories: 1150,
+          { name: 'Mixed Grill Platter', name_ar: 'مشاوي مشكّلة', description_ar: 'كفتة وطاووق وريش غنم لشخصين مع كل الإضافات.', price: 29.0, prep: 25, calories: 1150,
             description: 'Kofta, taouk and lamb cutlet for two, with all the trimmings.' },
-          { name: 'Grilled Sea Bass', price: 24.0, prep: 22, calories: 520,
+          { name: 'Grilled Sea Bass', name_ar: 'سمك قاروص مشوي', description_ar: 'سمك كامل مع الليمون وزيت الزيتون وصلصة الأعشاب.', price: 24.0, prep: 22, calories: 520,
             description: 'Whole sea bass, lemon, olive oil and herb salsa.' },
-          { name: 'Falafel Plate', price: 13.5, prep: 12, tags: ['vegan'], calories: 590,
+          { name: 'Falafel Plate', name_ar: 'صحن فلافل', description_ar: 'فلافل مقرمشة مع الطحينة والسلطة والمخللات.', price: 13.5, prep: 12, tags: ['vegan'], calories: 590,
             description: 'Crisp herb falafel, tahini sauce, salad and pickles.' },
         ],
       },
       {
         name: 'Wraps & Sandwiches',
+        name_ar: 'اللفائف والسندويشات',
         icon: '🌯',
         items: [
-          { name: 'Shawarma Wrap', price: 11.0, prep: 10, calories: 620,
+          { name: 'Shawarma Wrap', name_ar: 'لفة شاورما', description_ar: 'دجاج مشوي ببطء، ثومية، مخللات، وخبز صاج.', price: 11.0, prep: 10, calories: 620,
             description: 'Slow-roasted chicken, garlic sauce, pickles, saj bread.',
             groups: [
-              { name: 'Protein', min: 1, max: 1, options: [
-                { name: 'Chicken', delta: 0 }, { name: 'Beef', delta: 2 }, { name: 'Mushroom', delta: 0 },
+              { name: 'Protein', name_ar: 'البروتين', min: 1, max: 1, options: [
+                { name: 'Chicken', name_ar: 'دجاج', delta: 0 }, { name: 'Beef', name_ar: 'لحم', delta: 2 }, { name: 'Mushroom', name_ar: 'فطر', delta: 0 },
               ] },
             ] },
-          { name: 'Falafel Wrap', price: 9.5, prep: 8, tags: ['vegan'], calories: 540,
+          { name: 'Falafel Wrap', name_ar: 'لفة فلافل', description_ar: 'فلافل وطحينة وطماطم وبقدونس في خبز دافئ.', price: 9.5, prep: 8, tags: ['vegan'], calories: 540,
             description: 'Falafel, tahini, tomato and parsley in warm flatbread.' },
-          { name: 'Kofta Sandwich', price: 12.0, prep: 12, calories: 680,
+          { name: 'Kofta Sandwich', name_ar: 'سندويش كفتة', description_ar: 'كفتة مشوية مع الطحينة والبصل والسماق.', price: 12.0, prep: 12, calories: 680,
             description: 'Grilled kofta with tahini, onion and sumac.' },
         ],
       },
       {
         name: 'Desserts',
+        name_ar: 'الحلويات',
         icon: '🍮',
         items: [
-          { name: 'Baklava (3 pieces)', price: 6.0, prep: 3, calories: 430,
+          { name: 'Baklava (3 pieces)', name_ar: 'بقلاوة (٣ قطع)', description_ar: 'طبقات رقيقة مع الفستق وقطر ماء الزهر.', price: 6.0, prep: 3, calories: 430,
             description: 'Layered filo, pistachio and orange-blossom syrup.' },
-          { name: 'Knafeh', price: 8.0, prep: 10, featured: true, calories: 610,
+          { name: 'Knafeh', name_ar: 'كنافة', description_ar: 'عجينة جبن دافئة مع كنافة مقرمشة وقطر.', price: 8.0, prep: 10, featured: true, calories: 610,
             description: 'Warm cheese pastry, crisp kataifi and sweet syrup.' },
-          { name: 'Rice Pudding', price: 5.5, prep: 3, tags: ['vegetarian'], calories: 320,
+          { name: 'Rice Pudding', name_ar: 'رز بحليب', description_ar: 'رز بحليب بماء الورد مع الفستق المجروش.', price: 5.5, prep: 3, tags: ['vegetarian'], calories: 320,
             description: 'Rosewater rice pudding with crushed pistachio.' },
         ],
       },
       {
         name: 'Drinks',
+        name_ar: 'المشروبات',
         icon: '🥤',
         items: [
-          { name: 'Fresh Mint Lemonade', price: 4.5, prep: 3, tags: ['vegan'], calories: 140,
+          { name: 'Fresh Mint Lemonade', name_ar: 'ليمون بالنعناع', description_ar: 'ليمون ونعناع مخفوق مع قليل من السكر.', price: 4.5, prep: 3, tags: ['vegan'], calories: 140,
             description: 'Blended lemon, mint and a little sugar.',
             groups: [
-              { name: 'Size', min: 1, max: 1, options: [
-                { name: 'Regular', delta: 0 }, { name: 'Large', delta: 1.5 },
+              { name: 'Size', name_ar: 'الحجم', min: 1, max: 1, options: [
+                { name: 'Regular', name_ar: 'عادي', delta: 0 }, { name: 'Large', name_ar: 'كبير', delta: 1.5 },
               ] },
             ] },
-          { name: 'Turkish Coffee', price: 3.5, prep: 5, calories: 40,
+          { name: 'Turkish Coffee', name_ar: 'قهوة تركية', description_ar: 'مطحونة ناعماً وتُطهى على الرمل، تُقدَّم مع تمرة.', price: 3.5, prep: 5, calories: 40,
             description: 'Finely ground, cooked on sand, served with a date.' },
-          { name: 'Ayran', price: 3.0, prep: 2, calories: 90, description: 'Chilled salted yoghurt drink.' },
-          { name: 'Sparkling Water', price: 2.5, prep: 1, calories: 0, description: '330ml bottle.' },
+          { name: 'Ayran', name_ar: 'عيران', description_ar: 'لبن مملّح مثلّج.', price: 3.0, prep: 2, calories: 90, description: 'Chilled salted yoghurt drink.' },
+          { name: 'Sparkling Water', name_ar: 'مياه غازية', description_ar: 'قنينة ٣٣٠ مل.', price: 2.5, prep: 1, calories: 0, description: '330ml bottle.' },
         ],
       },
     ],
@@ -188,7 +200,7 @@ const DEMO = [
           { name: 'Margherita', price: 10.0, prep: 12, featured: true, tags: ['vegetarian'], calories: 780,
             description: 'San Marzano tomato, fior di latte, basil.',
             groups: [
-              { name: 'Size', min: 1, max: 1, options: [
+              { name: 'Size', name_ar: 'الحجم', min: 1, max: 1, options: [
                 { name: '30 cm', delta: 0 }, { name: '40 cm', delta: 4 },
               ] },
               { name: 'Add toppings', min: 0, max: 5, options: [
@@ -294,12 +306,14 @@ function seedRestaurant(spec) {
   const r = spec.restaurant;
   const restaurantId = db
     .prepare(
-      `INSERT INTO restaurants (name, slug, description, cuisine, phone, email, address, currency,
-                                tax_rate, service_charge_rate, primary_color, status, plan, opening_hours)
-       VALUES (@name, @slug, @description, @cuisine, @phone, @email, @address, @currency,
-               @tax_rate, @service_charge_rate, @primary_color, @status, @plan, @opening_hours)`
+      `INSERT INTO restaurants (name, name_ar, slug, description, description_ar, cuisine, phone,
+                                email, address, currency, tax_rate, service_charge_rate,
+                                primary_color, status, plan, online_payments_enabled, opening_hours)
+       VALUES (@name, @name_ar, @slug, @description, @description_ar, @cuisine, @phone,
+               @email, @address, @currency, @tax_rate, @service_charge_rate,
+               @primary_color, @status, @plan, @online_payments_enabled, @opening_hours)`
     )
-    .run({ status: 'active', ...r }).lastInsertRowid;
+    .run({ status: 'active', online_payments_enabled: 0, name_ar: '', description_ar: '', ...r }).lastInsertRowid;
 
   const insertUser = db.prepare(
     `INSERT INTO users (restaurant_id, name, email, password_hash, role, status)
@@ -323,24 +337,26 @@ function seedRestaurant(spec) {
   }
 
   const insertCategory = db.prepare(
-    'INSERT INTO categories (restaurant_id, name, description, icon, sort_order) VALUES (?, ?, ?, ?, ?)'
+    `INSERT INTO categories (restaurant_id, name, name_ar, description, description_ar, icon, sort_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
   );
   const insertItem = db.prepare(
-    `INSERT INTO menu_items (restaurant_id, category_id, name, description, price, is_available,
-                             is_featured, prep_minutes, calories, tags, sort_order)
-     VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`
+    `INSERT INTO menu_items (restaurant_id, category_id, name, name_ar, description, description_ar,
+                             price, is_available, is_featured, prep_minutes, calories, tags, sort_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?)`
   );
   const insertGroup = db.prepare(
-    'INSERT INTO option_groups (item_id, name, min_select, max_select, sort_order) VALUES (?, ?, ?, ?, ?)'
+    'INSERT INTO option_groups (item_id, name, name_ar, min_select, max_select, sort_order) VALUES (?, ?, ?, ?, ?, ?)'
   );
   const insertOption = db.prepare(
-    'INSERT INTO options (group_id, name, price_delta, sort_order) VALUES (?, ?, ?, ?)'
+    'INSERT INTO options (group_id, name, name_ar, price_delta, sort_order) VALUES (?, ?, ?, ?, ?)'
   );
 
   const itemIds = [];
   spec.categories.forEach((cat, catIndex) => {
     const categoryId = insertCategory.run(
-      restaurantId, cat.name, cat.description || '', cat.icon || '', catIndex
+      restaurantId, cat.name, cat.name_ar || '', cat.description || '', cat.description_ar || '',
+      cat.icon || '', catIndex
     ).lastInsertRowid;
 
     cat.items.forEach((item, itemIndex) => {
@@ -348,7 +364,9 @@ function seedRestaurant(spec) {
         restaurantId,
         categoryId,
         item.name,
+        item.name_ar || '',
         item.description || '',
+        item.description_ar || '',
         item.price,
         item.featured ? 1 : 0,
         item.prep || 10,
@@ -359,8 +377,11 @@ function seedRestaurant(spec) {
       itemIds.push({ id: itemId, price: item.price, name: item.name });
 
       (item.groups || []).forEach((group, groupIndex) => {
-        const groupId = insertGroup.run(itemId, group.name, group.min, group.max, groupIndex).lastInsertRowid;
-        group.options.forEach((opt, optIndex) => insertOption.run(groupId, opt.name, opt.delta, optIndex));
+        const groupId = insertGroup.run(
+          itemId, group.name, group.name_ar || '', group.min, group.max, groupIndex
+        ).lastInsertRowid;
+        group.options.forEach((opt, optIndex) =>
+          insertOption.run(groupId, opt.name, opt.name_ar || '', opt.delta, optIndex));
       });
     });
   });

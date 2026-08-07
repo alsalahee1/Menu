@@ -5,6 +5,8 @@
 
   const { el, $, mount, api, money, formatDateTime, statusBadge, sessionId, toast } = window.App;
 
+  const t = (key, params) => window.I18n.t(key, params);
+
   $('#lookup-form').addEventListener('submit', (event) => {
     event.preventDefault();
     const code = $('#lookup-code').value.trim().toUpperCase();
@@ -20,8 +22,8 @@
       if (!orders.length) {
         mount(host, el('div.card.empty', [
           el('div.empty-icon', '🧾'),
-          el('p', 'You have not placed any orders from this device yet.'),
-          el('a.btn.btn-primary', { href: '/' }, 'Find a restaurant'),
+          el('p', t('orders.emptyBody')),
+          el('a.btn.btn-primary', { href: '/' }, t('orders.findRestaurant')),
         ]));
         return;
       }
@@ -37,11 +39,11 @@
           el('div.grow', { style: { minWidth: 0 } }, [
             el('div.strong.truncate', order.restaurant_name),
             el('div.tiny.muted', [
-              order.table_label || 'Takeaway',
+              order.table_label || t('common.takeaway'),
               ' · ',
               formatDateTime(order.placed_at),
               ' · ',
-              el('span.mono', order.code),
+              el('span.mono.ltr-inline', order.code),
             ]),
           ]),
           el('div.col.gap-4', { style: { alignItems: 'flex-end' } }, [

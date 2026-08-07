@@ -23,6 +23,7 @@ process.env.NODE_ENV = 'test';
 const app = require('../server/index');
 const { db } = require('../server/db');
 const { hashPassword } = require('../server/lib/password');
+const rateLimit = require('../server/middleware/rateLimit');
 
 let server;
 let base;
@@ -446,4 +447,199 @@ test('a table QR renders as SVG for the public table URL', async () => {
   assert.match(response.headers.get('content-type'), /svg/);
   const svg = await response.text();
   assert.match(svg, /^<svg/);
+});
+
+// ===========================================================================
+// Online payments
+// ===========================================================================
+test('paying from the table is refused unless the restaurant enables it', async () => {
+  const order = await call('POST', '/api/public/orders', {
+    body: { slug: 'alpha', table_code: 'AAA11', items: [{ item_id: ids.itemA, qty: 1, option_ids: [ids.optSmall] }] },
+  });
+  assert.equal(order.status, 201);
+  ids.payOrderCode = order.body.order.code;
+
+  const blocked = await call('POST', `/api/public/orders/${ids.payOrderCode}/pay`, { body: {} });
+  assert.equal(blocked.status, 409);
+  assert.match(blocked.body.error, /does not accept payment/);
+
+  db.prepare('UPDATE restaurants SET online_payments_enabled = 1 WHERE id = ?').run(ids.rA);
+});
+
+test('a payment intent is reused rather than duplicated on refresh', async () => {
+  const first = await call('POST', `/api/public/orders/${ids.payOrderCode}/pay`, { body: {} });
+  assert.equal(first.status, 201);
+  assert.equal(first.body.intent.provider, 'mock');
+
+  const second = await call('POST', `/api/public/orders/${ids.payOrderCode}/pay`, { body: {} });
+  assert.equal(second.body.intent.reference, first.body.intent.reference, 'a refresh created a second intent');
+
+  ids.payRef = first.body.intent.reference;
+});
+
+test('a declined card fails the payment and leaves the order unpaid', async () => {
+  const declined = await call('POST', `/api/public/payments/${ids.payRef}/confirm`, {
+    body: { card_number: '4000000000000002' },
+  });
+  assert.equal(declined.status, 400);
+  assert.match(declined.body.error, /declined/i);
+
+  const order = await call('GET', `/api/public/orders/${ids.payOrderCode}`);
+  assert.equal(order.body.order.payment_status, 'unpaid');
+});
+
+test('a guest may retry after a decline and the order settles', async () => {
+  // The failed attempt is terminal, so a retry gets a fresh intent.
+  const retry = await call('POST', `/api/public/orders/${ids.payOrderCode}/pay`, { body: {} });
+  assert.notEqual(retry.body.intent.reference, ids.payRef, 'a failed intent was reused');
+
+  const paid = await call('POST', `/api/public/payments/${retry.body.intent.reference}/confirm`, {
+    body: { card_number: '4242424242424242' },
+  });
+  assert.equal(paid.status, 200);
+  assert.equal(paid.body.status, 'succeeded');
+  assert.equal(paid.body.order.payment_status, 'paid');
+  assert.equal(paid.body.order.payment_method, 'online');
+
+  ids.paidOrderId = paid.body.order.id;
+});
+
+test('an order that is already paid cannot be charged again', async () => {
+  const again = await call('POST', `/api/public/orders/${ids.payOrderCode}/pay`, { body: {} });
+  assert.equal(again.status, 409);
+  assert.match(again.body.error, /already been paid/);
+});
+
+test('every payment attempt is recorded', async () => {
+  const attempts = db
+    .prepare('SELECT status FROM payments WHERE order_id = ? ORDER BY id')
+    .all(ids.paidOrderId)
+    .map((row) => row.status);
+  assert.deepEqual(attempts, ['failed', 'succeeded']);
+});
+
+test('refunding an online payment reverses the order', async () => {
+  const refunded = await call('PATCH', `/api/rest/orders/${ids.paidOrderId}/payment`, {
+    token: tokens.ownerA,
+    body: { payment_status: 'refunded' },
+  });
+  assert.equal(refunded.status, 200);
+  assert.equal(refunded.body.order.payment_status, 'refunded');
+
+  const row = db.prepare("SELECT status FROM payments WHERE order_id = ? AND status = 'refunded'").get(ids.paidOrderId);
+  assert.ok(row, 'the payment row was not marked refunded');
+});
+
+test('an unknown payment reference is rejected', async () => {
+  const result = await call('POST', '/api/public/payments/pay_does_not_exist/confirm', {
+    body: { card_number: '4242424242424242' },
+  });
+  assert.equal(result.status, 404);
+});
+
+// ===========================================================================
+// Bilingual content
+// ===========================================================================
+test('Arabic copy round-trips through the menu API', async () => {
+  const created = await call('POST', '/api/rest/items', {
+    token: tokens.ownerA,
+    body: {
+      name: 'Falafel', name_ar: 'فلافل',
+      description: 'Crisp and green', description_ar: 'مقرمشة وخضراء',
+      price: 5, category_id: ids.catA,
+    },
+  });
+  assert.equal(created.status, 201);
+
+  const menu = await call('GET', '/api/public/r/alpha');
+  const item = menu.body.categories.flatMap((c) => c.items).find((i) => i.name === 'Falafel');
+  assert.ok(item, 'the new item is missing from the public menu');
+  assert.equal(item.name_ar, 'فلافل');
+  assert.equal(item.description_ar, 'مقرمشة وخضراء');
+});
+
+test('Arabic fields are optional and default to empty', async () => {
+  const menu = await call('GET', '/api/public/r/alpha');
+  const burger = menu.body.categories.flatMap((c) => c.items).find((i) => i.name === 'Burger');
+  assert.equal(burger.name_ar, '', 'an untranslated item should return an empty string, not null');
+});
+
+// ===========================================================================
+// Uploads
+// ===========================================================================
+test('image upload rejects a file that is not really an image', async () => {
+  const response = await fetch(`${base}/api/uploads/image`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${tokens.ownerA}`, 'Content-Type': 'image/png' },
+    body: Buffer.from('<script>alert(1)</script>'),
+  });
+  assert.equal(response.status, 400);
+  const payload = await response.json();
+  assert.match(payload.error, /not a PNG, JPEG, GIF or WebP/);
+});
+
+test('image upload accepts a real PNG and is closed to waiters', async () => {
+  const png = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    Buffer.alloc(64, 7),
+  ]);
+
+  const ok = await fetch(`${base}/api/uploads/image`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${tokens.ownerA}`, 'Content-Type': 'image/png' },
+    body: png,
+  });
+  assert.equal(ok.status, 201);
+  const payload = await ok.json();
+  assert.match(payload.url, /^\/uploads\/\d+-[a-f0-9]+\.png$/);
+
+  const waiter = await fetch(`${base}/api/uploads/image`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${tokens.waiterA}`, 'Content-Type': 'image/png' },
+    body: png,
+  });
+  assert.equal(waiter.status, 403);
+
+  const anonymous = await fetch(`${base}/api/uploads/image`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'image/png' },
+    body: png,
+  });
+  assert.equal(anonymous.status, 401);
+});
+
+// ===========================================================================
+// Rate limiting
+// ===========================================================================
+test('repeated failed sign-ins are throttled', async () => {
+  rateLimit.reset();
+
+  let sawTooMany = false;
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const result = await call('POST', '/api/auth/login', {
+      body: { email: 'ownera@test.local', password: 'wrong-password' },
+    });
+    if (result.status === 429) { sawTooMany = true; break; }
+  }
+  assert.ok(sawTooMany, 'the login endpoint never returned 429');
+
+  // A correct password is still refused while the window is open.
+  const locked = await call('POST', '/api/auth/login', {
+    body: { email: 'ownera@test.local', password: 'Password123!' },
+  });
+  assert.equal(locked.status, 429);
+
+  rateLimit.reset();
+});
+
+test('rate limit headers describe the remaining budget', async () => {
+  rateLimit.reset();
+  const response = await fetch(`${base}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'nobody@test.local', password: 'x' }),
+  });
+  assert.ok(response.headers.get('RateLimit-Limit'));
+  assert.ok(response.headers.get('RateLimit-Remaining'));
+  rateLimit.reset();
 });

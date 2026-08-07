@@ -15,33 +15,35 @@
           <span style="width:34px;height:34px;border-radius:10px;background:var(--brand);color:var(--brand-contrast);display:grid;place-items:center">🍽</span>
           <span>Menu</span>
         </a>
-        <p class="muted small mt-8">Sign in to the restaurant dashboard</p>
+        <p class="muted small mt-8" data-i18n="login.subtitle">Sign in to the restaurant dashboard</p>
+        <div class="row" style="justify-content:center" data-lang-switch></div>
       </div>
 
       <div class="card card-pad">
         <form id="login-form">
           <div class="field">
-            <label for="email">Email</label>
+            <label for="email" data-i18n="common.email">Email</label>
             <input id="email" type="email" required autocomplete="username" autofocus>
           </div>
           <div class="field">
-            <label for="password">Password</label>
+            <label for="password" data-i18n="common.password">Password</label>
             <input id="password" type="password" required autocomplete="current-password">
           </div>
           <div id="error" class="badge badge-danger mb-16" hidden style="display:block;padding:9px 12px"></div>
-          <button id="submit" class="btn btn-primary btn-block btn-lg" type="submit">Sign in</button>
+          <button id="submit" class="btn btn-primary btn-block btn-lg" type="submit" data-i18n="common.signIn">Sign in</button>
         </form>
 
-        <div class="divider-text">Demo accounts</div>
+        <div class="divider-text" data-i18n="login.demoAccounts">Demo accounts</div>
         <div class="col gap-4" id="demo-accounts"></div>
       </div>
 
       <p class="center small muted mt-16">
-        <a href="/">← Back to the guest site</a>
+        <a href="/" data-i18n="login.backToGuest">Back to the guest site</a>
       </p>
     </div>
   </main>
 
+  <script src="/assets/js/i18n.js"></script>
   <script src="/assets/js/core.js"></script>
   <script src="/assets/js/pages/login.js"></script>
 </body>

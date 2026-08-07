@@ -7,6 +7,9 @@
     el, $, mount, api, money, toast, modal, confirmDialog, guard, store, sessionId,
   } = window.App;
 
+  const t = (key, params) => window.I18n.t(key, params);
+  const loc = (row, field) => window.I18n.localised(row, field);
+
   // Route shapes: /t/<slug>/<tableCode> (scanned) or /r/<slug> (browse only).
   const segments = location.pathname.split('/').filter(Boolean);
   const slug = segments[1] || '';
@@ -40,10 +43,10 @@
       restaurant = menu.restaurant;
       categories = menu.categories;
 
-      if (!tableCode) $('#r-context').textContent = 'Browsing the menu — scan a table code to order';
+      if (!tableCode) $('#r-context').textContent = t('menu.browsingOnly');
 
-      document.title = `${restaurant.name} — Menu`;
-      $('#r-name').textContent = restaurant.name;
+      document.title = `${loc(restaurant, 'name')} — ${t('landing.menu')}`;
+      $('#r-name').textContent = loc(restaurant, 'name');
       if (restaurant.primary_color) {
         document.documentElement.style.setProperty('--brand', restaurant.primary_color);
       }
@@ -58,7 +61,7 @@
       });
       if (cart.length !== before) {
         saveCart();
-        toast('Some items in your cart are no longer available and were removed.', 'error');
+        toast(t('menu.itemsRemoved'), 'error');
       }
 
       render();
@@ -67,9 +70,9 @@
         $('#content'),
         el('div.empty', [
           el('div.empty-icon', '🍽️'),
-          el('h2', 'Menu unavailable'),
+          el('h2', t('menu.unavailable')),
           el('p', error.message),
-          el('a.btn.btn-primary', { href: '/' }, 'Back to home'),
+          el('a.btn.btn-primary', { href: '/' }, t('menu.backHome')),
         ])
       );
     }
@@ -101,7 +104,7 @@
               if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
             },
           },
-          `${category.icon ? `${category.icon} ` : ''}${category.name}`
+          `${category.icon ? `${category.icon} ` : ''}${loc(category, 'name')}`
         )
       )
     );
@@ -126,8 +129,8 @@
 
     blocks.push(
       el('div.mb-16', [
-        el('h1', { style: { marginBottom: '4px' } }, restaurant.name),
-        el('p.small.muted', { style: { marginBottom: '8px' } }, restaurant.description || ''),
+        el('h1', { style: { marginBottom: '4px' } }, loc(restaurant, 'name')),
+        el('p.small.muted', { style: { marginBottom: '8px' } }, loc(restaurant, 'description')),
         el('div.row.wrap.gap-8.small.faint', [
           restaurant.cuisine ? el('span', restaurant.cuisine) : null,
           restaurant.opening_hours ? el('span', `· ${restaurant.opening_hours}`) : null,
@@ -135,12 +138,12 @@
         !restaurant.accepts_orders
           ? el('div.card.card-pad.mt-16', { style: { background: 'var(--warn-soft)', borderColor: 'transparent' } },
               el('div.small.strong', { style: { color: 'var(--warn)' } },
-                'This restaurant has paused online ordering. You can browse the menu, but orders cannot be sent right now.'))
+                t('menu.pausedNotice')))
           : null,
         !tableCode
           ? el('div.card.card-pad.mt-16', { style: { background: 'var(--info-soft)', borderColor: 'transparent' } },
               el('div.small', { style: { color: 'var(--info)' } },
-                'You are previewing the menu. Scan the QR code on your table to place an order.'))
+                t('menu.previewNotice')))
           : null,
       ])
     );
@@ -149,7 +152,7 @@
     if (featured.length) {
       blocks.push(
         el('section.mb-24', [
-          el('h2', '⭐ Popular right now'),
+          el('h2', `⭐ ${t('menu.popular')}`),
           el('div.card', el('div', { style: { padding: '0 16px' } },
             featured.slice(0, 4).map((item) => dishRow(item, findCategoryIcon(item))))),
         ])
@@ -159,8 +162,8 @@
     for (const category of categories) {
       blocks.push(
         el('section', { id: `cat-${category.id}`, style: { scrollMarginTop: '118px', marginBottom: '26px' } }, [
-          el('h2', `${category.icon ? `${category.icon} ` : ''}${category.name}`),
-          category.description ? el('p.small.muted', { style: { marginTop: '-6px' } }, category.description) : null,
+          el('h2', `${category.icon ? `${category.icon} ` : ''}${loc(category, 'name')}`),
+          loc(category, 'description') ? el('p.small.muted', { style: { marginTop: '-6px' } }, loc(category, 'description')) : null,
           el('div.card', el('div', { style: { padding: '0 16px' } },
             category.items.map((item) => dishRow(item, category.icon)))),
         ])
@@ -169,20 +172,20 @@
 
     blocks.push(
       el('div.card.card-pad.mt-24', [
-        el('h3', 'Need something?'),
+        el('h3', t('menu.needSomething')),
         el('div.row.wrap.gap-8', [
-          serviceButton('waiter', '🙋 Call a waiter'),
-          serviceButton('water', '💧 Ask for water'),
-          serviceButton('bill', '🧾 Request the bill'),
-          serviceButton('cleanup', '🧽 Clear the table'),
+          serviceButton('waiter', `🙋 ${t('menu.callWaiter')}`),
+          serviceButton('water', `💧 ${t('menu.askWater')}`),
+          serviceButton('bill', `🧾 ${t('menu.requestBill')}`),
+          serviceButton('cleanup', `🧽 ${t('menu.clearTable')}`),
         ]),
-        !tableCode ? el('p.tiny.faint.mt-8', { style: { marginBottom: 0 } }, 'Available once you scan a table code.') : null,
+        !tableCode ? el('p.tiny.faint.mt-8', { style: { marginBottom: 0 } }, t('menu.serviceAfterScan')) : null,
       ])
     );
 
     blocks.push(
       el('div.center.mt-24', [
-        el('a.btn.btn-sm', { href: '/orders' }, 'My previous orders'),
+        el('a.btn.btn-sm', { href: '/orders' }, t('menu.previousOrders')),
       ])
     );
 
@@ -207,15 +210,15 @@
         dishThumb(item, categoryIcon),
         el('div.grow', [
           el('div.row.gap-8', [
-            el('div.dish-name.grow', item.name),
-            inCart ? el('span.badge.badge-brand', `${inCart} in cart`) : null,
+            el('div.dish-name.grow', loc(item, 'name')),
+            inCart ? el('span.badge.badge-brand', `${inCart} ${t('menu.inCart')}`) : null,
           ]),
-          item.description ? el('div.dish-desc', item.description) : null,
+          loc(item, 'description') ? el('div.dish-desc', loc(item, 'description')) : null,
           el('div.row.wrap.gap-8', [
             el('span.dish-price', money(item.price, restaurant.currency)),
-            !item.is_available ? el('span.badge.badge-danger', 'Sold out') : null,
+            !item.is_available ? el('span.badge.badge-danger', t('menu.soldOut')) : null,
             ...item.tags.map((tag) => el('span.badge', tag)),
-            item.calories ? el('span.tiny.faint', `${item.calories} kcal`) : null,
+            item.calories ? el('span.tiny.faint', t('menu.kcal', { n: item.calories })) : null,
           ]),
         ]),
       ]
@@ -255,13 +258,17 @@
 
     const groupNodes = item.option_groups.map((group) => {
       const requirement = group.min_select > 0
-        ? `Required · choose ${group.min_select === group.max_select ? group.min_select : `${group.min_select}–${group.max_select}`}`
-        : `Optional · up to ${group.max_select}`;
+        ? t('menu.requiredChoose', {
+            range: group.min_select === group.max_select
+              ? group.min_select
+              : `${group.min_select}–${group.max_select}`,
+          })
+        : t('menu.optionalUpTo', { n: group.max_select });
       const single = group.max_select === 1;
 
       return el('div.mb-16', [
         el('div.row.between', [
-          el('strong', group.name),
+          el('strong', loc(group, 'name')),
           el('span.tiny.faint', requirement),
         ]),
         el('div.mt-8', group.options.map((option) =>
@@ -278,7 +285,7 @@
                 } else if (event.target.checked) {
                   if (set.size >= group.max_select) {
                     event.target.checked = false;
-                    toast(`You can pick at most ${group.max_select} from "${group.name}"`, 'error');
+                    toast(t('menu.chooseAtMost', { n: group.max_select, group: loc(group, 'name') }), 'error');
                     return;
                   }
                   set.add(option.id);
@@ -288,7 +295,7 @@
                 refreshPrice();
               },
             }),
-            el('span.grow', option.name),
+            el('span.grow', loc(option, 'name')),
             option.price_delta
               ? el('span.small.muted', `${option.price_delta > 0 ? '+' : ''}${money(option.price_delta, restaurant.currency)}`)
               : null,
@@ -299,23 +306,23 @@
 
     const noteInput = el('textarea', {
       id: 'item-note', rows: 2, maxlength: 300,
-      placeholder: 'e.g. no onions, extra napkins',
+      placeholder: t('menu.notePlaceholder'),
     });
 
     const handle = modal({
-      title: item.name,
+      title: loc(item, 'name'),
       body: [
         item.image_url
           ? el('img', { src: item.image_url, alt: '', style: { borderRadius: '12px', marginBottom: '14px' } })
           : el('div.hero-cover.mb-16', { style: { height: '110px' } }, categoryIcon || '🍽️'),
-        item.description ? el('p.muted', item.description) : null,
+        loc(item, 'description') ? el('p.muted', loc(item, 'description')) : null,
         el('div.row.wrap.gap-8.mb-16', [
-          el('span.badge', `${item.prep_minutes} min`),
-          item.calories ? el('span.badge', `${item.calories} kcal`) : null,
+          el('span.badge', t('menu.minutes', { n: item.prep_minutes })),
+          item.calories ? el('span.badge', t('menu.kcal', { n: item.calories })) : null,
           ...item.tags.map((tag) => el('span.badge.badge-ok', tag)),
         ]),
         ...groupNodes,
-        el('div.field', [el('label', { for: 'item-note' }, 'Note for the kitchen'), noteInput]),
+        el('div.field', [el('label', { for: 'item-note' }, t('menu.noteForKitchen')), noteInput]),
       ],
       actions: (h) => [
         el('div.qty', [
@@ -327,14 +334,14 @@
           onclick: () => {
             for (const group of item.option_groups) {
               if (selected.get(group.id).size < group.min_select) {
-                toast(`Please choose ${group.min_select} from "${group.name}"`, 'error');
+                toast(t('menu.chooseAtLeast', { n: group.min_select, group: loc(group, 'name') }), 'error');
                 return;
               }
             }
             addToCart(item, qty, selected, noteInput.value.trim());
             h.close();
           },
-        }, ['Add · ', priceNode]),
+        }, [`${t('common.add')} · `, priceNode]),
       ],
     });
 
@@ -349,7 +356,7 @@
       for (const option of group.options) {
         if (selected.get(group.id).has(option.id)) {
           optionIds.push(option.id);
-          optionLabels.push(option.name);
+          optionLabels.push(loc(option, 'name'));
         }
       }
     }
@@ -370,7 +377,7 @@
       cart.push({
         signature,
         item_id: item.id,
-        name: item.name,
+        name: loc(item, 'name'),
         unit_price: unitPrice,
         qty,
         option_ids: optionIds,
@@ -381,7 +388,7 @@
 
     saveCart();
     render();
-    toast(`${item.name} added to your order`, 'success');
+    toast(t('menu.addedToOrder', { name: loc(item, 'name') }), 'success');
   }
 
   // ------------------------------------------------------------ cart bar ---
@@ -391,7 +398,7 @@
     bar.hidden = count === 0;
     if (count === 0) return;
 
-    $('#cart-count').textContent = `${count} item${count === 1 ? '' : 's'}`;
+    $('#cart-count').textContent = `${count} ${t('common.items')}`;
     $('#cart-total').textContent = money(cartTotal(), restaurant.currency);
   }
 
@@ -439,29 +446,29 @@
         )),
 
         el('div.col.gap-4.small', [
-          totalRow('Subtotal', subtotal),
+          totalRow(t('common.subtotal'), subtotal),
           restaurant.service_charge_rate
-            ? totalRow(`Service charge (${Math.round(restaurant.service_charge_rate * 100)}%)`, service)
+            ? totalRow(`${t('common.serviceCharge')} (${Math.round(restaurant.service_charge_rate * 100)}%)`, service)
             : null,
-          restaurant.tax_rate ? totalRow(`Tax (${Math.round(restaurant.tax_rate * 100)}%)`, tax) : null,
+          restaurant.tax_rate ? totalRow(`${t('common.tax')} (${Math.round(restaurant.tax_rate * 100)}%)`, tax) : null,
           el('hr', { style: { margin: '8px 0' } }),
           el('div.row.between', [
-            el('strong', 'Total'),
+            el('strong', t('common.total')),
             el('strong', { style: { fontSize: '1.15rem' } }, money(subtotal + service + tax, restaurant.currency)),
           ]),
         ]),
 
         el('div.field.mt-24', [
-          el('label', { for: 'order-note' }, 'Note for the whole order'),
-          el('textarea', { id: 'order-note', rows: 2, maxlength: 500, placeholder: 'Allergies, timing, anything else' }),
+          el('label', { for: 'order-note' }, t('menu.noteWholeOrder')),
+          el('textarea', { id: 'order-note', rows: 2, maxlength: 500, placeholder: t('menu.notePlaceholder2') }),
         ]),
         el('div.form-grid', [
           el('div.field', [
-            el('label', { for: 'guest-name' }, 'Your name (optional)'),
+            el('label', { for: 'guest-name' }, t('menu.guestName')),
             el('input', { id: 'guest-name', type: 'text', maxlength: 80, value: store.get('menu.guestName', '') }),
           ]),
           el('div.field', [
-            el('label', { for: 'guest-phone' }, 'Phone (optional)'),
+            el('label', { for: 'guest-phone' }, t('menu.guestPhone')),
             el('input', { id: 'guest-phone', type: 'tel', maxlength: 40, value: store.get('menu.guestPhone', '') }),
           ]),
         ]),
@@ -473,21 +480,21 @@
     }
 
     const handle = modal({
-      title: `Your order · ${tableCode ? `Table code ${tableCode}` : 'Takeaway'}`,
+      title: `${t('menu.yourOrder')} · ${tableCode ? t('menu.tableCode', { code: tableCode }) : t('common.takeaway')}`,
       body,
       actions: (h) => [
         el('button.btn', {
           onclick: async () => {
-            if (await confirmDialog({ title: 'Empty your cart?', message: 'This removes everything you have added.', confirmLabel: 'Empty cart' })) {
+            if (await confirmDialog({ title: t('menu.emptyCartTitle'), message: t('menu.emptyCartBody'), confirmLabel: t('menu.emptyCart') })) {
               cart = [];
               saveCart();
               h.close();
               render();
             }
           },
-        }, 'Empty'),
+        }, t('menu.emptyCart')),
         el('button.btn.btn-primary.grow', { id: 'place-order', onclick: () => placeOrder(h) },
-          tableCode ? 'Send to kitchen' : 'Scan a table to order'),
+          tableCode ? t('menu.sendToKitchen') : t('menu.scanToOrder')),
       ],
     });
 
@@ -498,11 +505,11 @@
 
   const placeOrder = guard(async (handle) => {
     if (!tableCode) {
-      toast('Scan the QR code on your table to place an order', 'error');
+      toast(t('menu.helpNoTable'), 'error');
       return;
     }
     if (!restaurant.accepts_orders) {
-      toast('This restaurant has paused online ordering', 'error');
+      toast(t('menu.pausedNotice'), 'error');
       return;
     }
 
@@ -513,7 +520,7 @@
     store.set('menu.guestPhone', phone);
 
     button.disabled = true;
-    button.textContent = 'Sending…';
+    button.textContent = t('menu.sending');
 
     try {
       const { order } = await api.post(
@@ -537,7 +544,7 @@
       location.href = `/order/${order.code}`;
     } catch (error) {
       button.disabled = false;
-      button.textContent = 'Send to kitchen';
+      button.textContent = t('menu.sendToKitchen');
       throw error;
     }
   });
@@ -552,7 +559,7 @@
         button.disabled = true;
         try {
           await api.post('/public/service-requests', { slug, table_code: tableCode, type }, { anonymous: true });
-          toast('A member of staff has been notified.', 'success');
+          toast(t('menu.staffNotified'), 'success');
         } finally {
           setTimeout(() => { button.disabled = false; }, 8000);
         }
@@ -564,20 +571,20 @@
   $('#view-cart').addEventListener('click', openCart);
   $('#help-btn').addEventListener('click', () => {
     modal({
-      title: 'How ordering works',
+      title: t('menu.howOrderingWorks'),
       body: [
         el('ol', { style: { paddingLeft: '20px', lineHeight: '1.9' } }, [
-          el('li', 'Tap a dish to choose size, extras and quantity.'),
-          el('li', 'Review everything in your cart, then send it to the kitchen.'),
-          el('li', 'Watch the live status — you will see when it is being prepared and when it is on its way.'),
-          el('li', 'Need a person? Use the "Call a waiter" or "Request the bill" buttons.'),
+          el('li', t('menu.help1')),
+          el('li', t('menu.help2')),
+          el('li', t('menu.help3')),
+          el('li', t('menu.help4')),
         ]),
         tableCode
-          ? el('p.small.muted', `You are ordering for table code ${tableCode}. Your food is brought to this table.`)
-          : el('p.small.muted', 'Scan the QR code on your table to start ordering.'),
-        restaurant && restaurant.phone ? el('p.small', `Call the restaurant: ${restaurant.phone}`) : null,
+          ? el('p.small.muted', t('menu.helpTable', { code: tableCode }))
+          : el('p.small.muted', t('menu.helpNoTable')),
+        restaurant && restaurant.phone ? el('p.small', t('menu.callRestaurant', { phone: restaurant.phone })) : null,
       ],
-      actions: (h) => [el('button.btn.btn-primary', { onclick: h.close }, 'Got it')],
+      actions: (h) => [el('button.btn.btn-primary', { onclick: h.close }, t('menu.gotIt'))],
     });
   });
 

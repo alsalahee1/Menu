@@ -11,24 +11,26 @@
   <header class="guest-header">
     <div class="guest-header-inner">
       <a class="btn btn-ghost btn-icon" href="/" aria-label="Home">🍽</a>
-      <div class="grow"><div class="strong">My orders</div><div class="tiny muted">On this device</div></div>
+      <div class="grow"><div class="strong" data-i18n="orders.title">My orders</div><div class="tiny muted" data-i18n="orders.onThisDevice">On this device</div></div>
+      <span data-lang-switch="compact"></span>
     </div>
   </header>
 
   <main class="guest-main" style="padding-top:18px">
     <div class="card card-pad mb-16">
-      <h3>Find an order by code</h3>
+      <h3 data-i18n="orders.findByCode">Find an order by code</h3>
       <form id="lookup-form" class="row gap-8">
         <input id="lookup-code" type="text" placeholder="e.g. A7F3QK" maxlength="10"
                autocomplete="off" autocapitalize="characters" class="grow" required>
-        <button class="btn btn-primary" type="submit">Track</button>
+        <button class="btn btn-primary" type="submit" data-i18n="orders.track">Track</button>
       </form>
     </div>
 
-    <h2>Recent orders</h2>
+    <h2 data-i18n="orders.recent">Recent orders</h2>
     <div id="list"><div class="skeleton" style="height:90px"></div></div>
   </main>
 
+  <script src="/assets/js/i18n.js"></script>
   <script src="/assets/js/core.js"></script>
   <script src="/assets/js/pages/orders.js"></script>
 </body>

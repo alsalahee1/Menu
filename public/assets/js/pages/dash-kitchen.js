@@ -5,16 +5,20 @@
 
   const { el, mount, api, formatTime, statusLabel, toast, guard, stream, store } = window.App;
 
-  const shell = window.Shell.boot({ kind: 'restaurant', title: 'Kitchen display' });
+  const t = (key, params) => window.I18n.t(key, params);
+
+  const loc = (row, field) => window.I18n.localised(row, field);
+
+  const shell = window.Shell.boot({ kind: 'restaurant', title: t('nav.kitchen') });
   if (!shell) return;
 
   // Which lanes the board shows. "served" is intentionally excluded — once
   // food leaves the pass the kitchen no longer needs it on screen.
   const LANES = [
-    { status: 'pending', title: 'New', next: { status: 'accepted', label: 'Accept' } },
-    { status: 'accepted', title: 'Confirmed', next: { status: 'preparing', label: 'Start' } },
-    { status: 'preparing', title: 'Cooking', next: { status: 'ready', label: 'Ready' } },
-    { status: 'ready', title: 'Ready to serve', next: { status: 'served', label: 'Served' } },
+    { status: 'pending', title: 'kds.new', next: { status: 'accepted', label: 'board.accept' } },
+    { status: 'accepted', title: 'kds.confirmed', next: { status: 'preparing', label: 'kds.start' } },
+    { status: 'preparing', title: 'kds.cooking', next: { status: 'ready', label: 'kds.ready' } },
+    { status: 'ready', title: 'kds.readyToServe', next: { status: 'served', label: 'kds.served' } },
   ];
 
   let orders = [];
@@ -27,10 +31,10 @@
     onclick: () => {
       soundOn = !soundOn;
       store.set('menu.kdsSound', soundOn);
-      soundButton.textContent = soundOn ? '🔔 Sound on' : '🔕 Sound off';
+      soundButton.textContent = soundOn ? `🔔 ${t('kds.soundOn')}` : `🔕 ${t('kds.soundOff')}`;
       if (soundOn) chime();
     },
-  }, soundOn ? '🔔 Sound on' : '🔕 Sound off');
+  }, soundOn ? `🔔 ${t('kds.soundOn')}` : `🔕 ${t('kds.soundOff')}`);
 
   shell.setActions([
     soundButton,
@@ -39,7 +43,7 @@
         if (document.fullscreenElement) document.exitFullscreen();
         else document.documentElement.requestFullscreen().catch(() => toast('Fullscreen was blocked', 'error'));
       },
-    }, '⛶ Fullscreen'),
+    }, `⛶ ${t('kds.fullscreen')}`),
   ]);
 
   /** Short beep for a new ticket — built with WebAudio so there is no asset to ship. */
@@ -94,8 +98,8 @@
     if (total === 0) {
       mount(board, el('div.card.empty', [
         el('div.empty-icon', '🍳'),
-        el('h2', 'All caught up'),
-        el('p', 'New tickets appear here the moment a guest sends an order.'),
+        el('h2', t('kds.allCaughtUp')),
+        el('p', t('kds.allCaughtUpBody')),
       ]));
       return;
     }
@@ -104,12 +108,12 @@
       lanes.map((lane) =>
         el('div', [
           el('div.row.between.mb-8', { style: { position: 'sticky', top: 0 } }, [
-            el('h2', { style: { margin: 0, fontSize: '.98rem' } }, lane.title),
+            el('h2', { style: { margin: 0, fontSize: '.98rem' } }, t(lane.title)),
             el('span.badge', { class: lane.orders.length ? 'badge-brand' : '' }, String(lane.orders.length)),
           ]),
           el('div.col.gap-8', lane.orders.length
             ? lane.orders.map((order) => ticket(order, lane.next))
-            : el('div.card.card-pad.center.tiny.faint', 'Empty')),
+            : el('div.card.card-pad.center.tiny.faint', t('kds.empty'))),
         ])
       )
     ));
@@ -122,8 +126,8 @@
     return el('div.card.kds-card', { class: ageClass }, [
       el('div.card-head', { style: { padding: '10px 12px' } }, [
         el('div', [
-          el('div.strong', order.table_label || 'Takeaway'),
-          el('div.tiny.faint.mono', order.code),
+          el('div.strong', order.table_label || t('common.takeaway')),
+          el('div.tiny.faint.mono.ltr-inline', order.code),
         ]),
         el('div.right', [
           el('div.strong.small', { style: minutes > 25 ? { color: 'var(--danger)' } : minutes > 12 ? { color: 'var(--warn)' } : null },
@@ -149,13 +153,13 @@
       el('div', { style: { padding: '10px 12px', borderTop: '1px solid var(--border)' } },
         el('button.btn.btn-primary.btn-block.btn-sm', {
           onclick: (event) => advance(event.currentTarget, order.id, next.status),
-        }, next.label)),
+        }, t(next.label))),
     ]);
   }
 
   const advance = guard(async (button, orderId, status) => {
     await window.App.withBusy(button, () => api.patch(`/rest/orders/${orderId}/status`, { status }));
-    toast(`Marked ${statusLabel(status).toLowerCase()}`, 'success');
+    toast(t('kds.markedAs', { status: statusLabel(status) }), 'success');
     load();
   });
 
@@ -165,7 +169,7 @@
   stream('/rest/stream', {
     'order.created': (order) => {
       chime();
-      toast(`New ticket · ${order.table_label || 'Takeaway'}`, 'success');
+      toast(t('kds.newTicket', { table: order.table_label || t('common.takeaway') }), 'success');
       refresh();
     },
     'order.updated': refresh,

@@ -5,8 +5,12 @@
 
   const { el, $, mount, api, money, toast, viewRestaurant } = window.App;
 
+  const t = (key, params) => window.I18n.t(key, params);
+
+  const loc = (row, field) => window.I18n.localised(row, field);
+
   const shell = window.Shell.boot({
-    kind: 'restaurant', title: 'Reports', roles: ['owner', 'manager', 'super_admin'],
+    kind: 'restaurant', title: t('nav.reports'), roles: ['owner', 'manager', 'super_admin'],
   });
   if (!shell) return;
 
@@ -19,7 +23,7 @@
   const root = el('div');
   shell.page.append(controls, root);
 
-  shell.setActions([el('button.btn.btn-sm', { onclick: exportCsv }, '⬇ Export CSV')]);
+  shell.setActions([el('button.btn.btn-sm', { onclick: exportCsv }, `⬇ ${t('rep.exportCsv')}`)]);
 
   function isoDaysAgo(days) {
     const date = new Date();
@@ -28,7 +32,7 @@
   }
 
   function renderControls() {
-    const presets = [[7, 'Last 7 days'], [30, 'Last 30 days'], [90, 'Last 90 days']];
+    const presets = [[7, t('rep.last7')], [30, t('rep.last30')], [90, t('rep.last90')]];
 
     mount(controls, el('div.row.wrap.gap-16', [
       el('div.pill-toggle', presets.map(([days, label]) =>
@@ -46,12 +50,12 @@
       )),
       el('div.grow'),
       el('div.row.gap-8', [
-        el('label.tiny.faint', { for: 'rep-from' }, 'From'),
+        el('label.tiny.faint', { for: 'rep-from' }, t('common.from')),
         el('input', {
           id: 'rep-from', type: 'date', value: state.from, style: { maxWidth: '160px' },
           onchange: (event) => { state.from = event.target.value; state.preset = 0; renderControls(); load(); },
         }),
-        el('label.tiny.faint', { for: 'rep-to' }, 'To'),
+        el('label.tiny.faint', { for: 'rep-to' }, t('common.to')),
         el('input', {
           id: 'rep-to', type: 'date', value: state.to, style: { maxWidth: '160px' },
           onchange: (event) => { state.to = event.target.value; state.preset = 0; renderControls(); load(); },
@@ -93,17 +97,17 @@
 
     mount(root, [
       el('div.grid.grid-4.mb-16', [
-        stat('Revenue', fmtMoney(summary.revenue), `${completed} completed orders`),
-        stat('Average ticket', fmtMoney(summary.avg_ticket), 'Per order'),
-        stat('Tax collected', fmtMoney(summary.tax), `Service ${fmtMoney(summary.service_charge)}`),
-        stat('Cancelled', String(summary.cancelled),
-          summary.orders ? `${Math.round((summary.cancelled / summary.orders) * 100)}% of all orders` : '—'),
+        stat(t('common.revenue'), fmtMoney(summary.revenue), t('rep.completedOrders', { n: completed })),
+        stat(t('rep.avgTicket'), fmtMoney(summary.avg_ticket), t('rep.perOrder')),
+        stat(t('rep.taxCollected'), fmtMoney(summary.tax), t('rep.serviceAmount', { amount: fmtMoney(summary.service_charge) })),
+        stat(t('rep.cancelled'), String(summary.cancelled),
+          summary.orders ? t('rep.percentOfOrders', { n: Math.round((summary.cancelled / summary.orders) * 100) }) : '—'),
       ]),
 
       // Revenue trend — one series, one axis, so the title names it.
       el('div.card.mb-16', [
         el('div.card-head', [
-          el('h2', 'Revenue per day'),
+          el('h2', t('rep.revenuePerDay')),
           el('span.small.muted', `${data.range.from} → ${data.range.to}`),
         ]),
         el('div.card-body', window.Charts.areaLine({
@@ -111,17 +115,17 @@
           height: 220,
           format: fmtCompact,
           data: data.by_day.map((day) => ({
-            label: new Date(`${day.day}T12:00:00Z`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
+            label: new Date(`${day.day}T12:00:00Z`).toLocaleDateString(window.I18n.locale, { month: 'short', day: 'numeric' }),
             title: day.day,
             value: day.revenue,
-            detail: [fmtMoney(day.revenue), `${day.orders} orders`],
+            detail: [fmtMoney(day.revenue), t('board.orderCount', { n: day.orders })],
           })),
         })),
       ]),
 
       el('div.grid.grid-2.mb-16', [
         el('div.card', [
-          el('div.card-head', [el('h2', 'Orders by hour')]),
+          el('div.card-head', [el('h2', t('rep.ordersByHour'))]),
           el('div.card-body', window.Charts.columns({
             ariaLabel: 'Orders by hour of day',
             height: 200,
@@ -129,20 +133,20 @@
               label: `${String(row.hour).padStart(2, '0')}`,
               title: `${String(row.hour).padStart(2, '0')}:00`,
               value: row.orders,
-              detail: [`${row.orders} orders`],
+              detail: [t('board.orderCount', { n: row.orders })],
             })),
           })),
           el('div.card-body', { style: { paddingTop: 0 } },
-            el('p.tiny.faint', { style: { margin: 0 } }, 'Use this to plan staffing around your busiest service.')),
+            el('p.tiny.faint', { style: { margin: 0 } }, t('rep.staffingHint'))),
         ]),
 
         el('div.card', [
-          el('div.card-head', [el('h2', 'Revenue by category')]),
+          el('div.card-head', [el('h2', t('rep.revenueByCategory'))]),
           el('div.card-body', window.Charts.rankedBars({
             data: data.by_category.map((row) => ({
               label: row.category,
               value: row.revenue,
-              detail: `${fmtMoney(row.revenue)} · ${row.qty} sold`,
+              detail: `${fmtMoney(row.revenue)} · ${row.qty} ${t('common.sold')}`,
             })),
           })),
         ]),
@@ -150,10 +154,10 @@
 
       el('div.grid.grid-2.mb-16', [
         el('div.card', [
-          el('div.card-head', [el('h2', 'Best sellers')]),
+          el('div.card-head', [el('h2', t('rep.bestSellers'))]),
           data.top_items.length
             ? el('div.table-wrap', el('table.data', [
-                el('thead', el('tr', [el('th', '#'), el('th', 'Dish'), el('th.right', 'Sold'), el('th.right', 'Revenue')])),
+                el('thead', el('tr', [el('th', '#'), el('th', t('edit.dish')), el('th.right', t('common.sold')), el('th.right', t('common.revenue'))])),
                 el('tbody', data.top_items.map((item, index) =>
                   el('tr', [
                     el('td.faint.small', String(index + 1)),
@@ -163,12 +167,12 @@
                   ])
                 )),
               ]))
-            : el('div.empty', 'No sales in this period.'),
+            : el('div.empty', t('rep.noSales')),
         ]),
 
         el('div.col.gap-16', [
           el('div.card', [
-            el('div.card-head', [el('h2', 'Payment methods')]),
+            el('div.card-head', [el('h2', t('rep.paymentMethods'))]),
             el('div.card-body', [
               window.Charts.segmentedBar({
                 format: fmtMoney,
@@ -176,7 +180,7 @@
               }),
               // Table view backs up the segmented bar for colour-independent reading.
               el('div.table-wrap.mt-16', el('table.data', [
-                el('thead', el('tr', [el('th', 'Method'), el('th.right', 'Orders'), el('th.right', 'Revenue')])),
+                el('thead', el('tr', [el('th', t('rep.method')), el('th.right', t('common.orders')), el('th.right', t('common.revenue'))])),
                 el('tbody', aggregatePayments(data.by_payment).map((row) =>
                   el('tr', [
                     el('td', row.label),
@@ -189,13 +193,13 @@
           ]),
 
           el('div.card', [
-            el('div.card-head', [el('h2', 'Busiest tables')]),
+            el('div.card-head', [el('h2', t('rep.busiestTables'))]),
             el('div.card-body', window.Charts.rankedBars({
               limit: 8,
               data: data.busiest_tables.map((row) => ({
                 label: row.table_label,
                 value: row.revenue,
-                detail: `${fmtMoney(row.revenue)} · ${row.orders} orders`,
+                detail: `${fmtMoney(row.revenue)} · ${t('board.orderCount', { n: row.orders })}`,
               })),
             })),
           ]),
@@ -242,13 +246,13 @@
     const rows = [
       ['Report range', state.data.range.from, state.data.range.to],
       [],
-      ['Day', 'Orders', 'Revenue'],
+      [t('dash.placed'), t('common.orders'), t('common.revenue')],
       ...state.data.by_day.map((day) => [day.day, day.orders, day.revenue]),
       [],
-      ['Dish', 'Quantity', 'Revenue'],
+      [t('edit.dish'), t('common.qty'), t('common.revenue')],
       ...state.data.top_items.map((item) => [item.name, item.qty, item.revenue]),
       [],
-      ['Category', 'Quantity', 'Revenue'],
+      [t('edit.category'), t('common.qty'), t('common.revenue')],
       ...state.data.by_category.map((row) => [row.category, row.qty, row.revenue]),
     ];
 
@@ -262,7 +266,7 @@
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
-    toast('Report exported', 'success');
+    toast(t('rep.exported'), 'success');
   }
 
   state.from = isoDaysAgo(29);

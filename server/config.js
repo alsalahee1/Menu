@@ -36,6 +36,19 @@ const config = {
   jwtTtl: Number(process.env.JWT_TTL || 60 * 60 * 24 * 7),
   databaseFile: path.resolve(ROOT, process.env.DATABASE_FILE || './data/menu.db'),
   publicBaseUrl: (process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, ''),
+
+  // Where uploaded dish images are written. Kept beside the database so a
+  // single mounted volume covers all persistent state.
+  uploadDir: path.resolve(ROOT, process.env.UPLOAD_DIR || './data/uploads'),
+  maxUploadBytes: Number(process.env.MAX_UPLOAD_BYTES || 3 * 1024 * 1024),
+
+  // Set to switch online payments from the built-in simulator to Stripe.
+  stripeSecretKey: process.env.STRIPE_SECRET_KEY || '',
+  stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY || '',
+
+  // Send HSTS when the app is terminated by TLS upstream.
+  trustProxy: process.env.TRUST_PROXY || 'loopback',
+  forceHttps: (process.env.FORCE_HTTPS || 'false') === 'true',
 };
 
 if (config.env === 'production' && config.jwtSecret === 'dev-only-insecure-secret-change-me') {

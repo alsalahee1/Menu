@@ -6,6 +6,7 @@ const config = require('../config');
 const { db } = require('../db');
 const { getMenu } = require('../services/menu');
 const orders = require('../services/orders');
+const payments = require('../services/payments');
 const events = require('../lib/events');
 const { str, int, oneOf, email } = require('../lib/validate');
 const { notFound, badRequest, conflict, forbidden } = require('../lib/errors');
@@ -16,8 +17,10 @@ function publicRestaurant(row) {
   return {
     id: row.id,
     name: row.name,
+    name_ar: row.name_ar,
     slug: row.slug,
     description: row.description,
+    description_ar: row.description_ar,
     cuisine: row.cuisine,
     logo_url: row.logo_url,
     cover_url: row.cover_url,
@@ -28,6 +31,7 @@ function publicRestaurant(row) {
     service_charge_rate: row.service_charge_rate,
     primary_color: row.primary_color,
     accepts_orders: !!row.accepts_orders && row.status === 'active',
+    online_payments_enabled: !!row.online_payments_enabled,
     opening_hours: row.opening_hours,
     status: row.status,
   };
@@ -273,6 +277,47 @@ router.post('/service-requests', (req, res, next) => {
     return res.status(201).json({ ok: true, request: payload });
   } catch (err) {
     return next(err);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Paying from the table
+// ---------------------------------------------------------------------------
+
+/** Begin (or resume) an online payment for an order. */
+router.post('/orders/:code/pay', async (req, res, next) => {
+  try {
+    const intent = await payments.createIntent(req.params.code);
+    res.status(201).json({
+      intent,
+      publishable_key: intent.provider === 'stripe' ? config.stripePublishableKey : undefined,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * Complete a simulated payment. Only the built-in mock provider accepts card
+ * details here; with a real provider the browser talks to the provider
+ * directly and calls /sync below.
+ */
+router.post('/payments/:reference/confirm', (req, res, next) => {
+  try {
+    const result = payments.confirmMock(req.params.reference, req.body.card_number);
+    res.json({ status: result.status, order: result.order });
+  } catch (err) {
+    next(err);
+  }
+});
+
+/** Ask the server to re-read the provider's authoritative payment status. */
+router.post('/payments/:reference/sync', async (req, res, next) => {
+  try {
+    const result = await payments.syncFromProvider(req.params.reference);
+    res.json({ status: result.status, order: result.order });
+  } catch (err) {
+    next(err);
   }
 });
 

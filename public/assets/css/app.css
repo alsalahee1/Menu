@@ -132,7 +132,7 @@ hr { border: 0; border-top: 1px solid var(--border); margin: 20px 0; }
 .strong { font-weight: 650; }
 .mono { font-family: var(--mono); }
 .center { text-align: center; }
-.right { text-align: right; }
+.right { text-align: end; }
 .nowrap { white-space: nowrap; }
 .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hidden { display: none !important; }
@@ -278,7 +278,7 @@ select { cursor: pointer; }
 .table-wrap { overflow-x: auto; }
 table.data { width: 100%; border-collapse: collapse; font-size: .88rem; }
 table.data th {
-  text-align: left; padding: 10px 14px;
+  text-align: start; padding: 10px 14px;
   font-size: .72rem; font-weight: 650; text-transform: uppercase; letter-spacing: .05em;
   color: var(--text-faint); background: var(--surface-2);
   border-bottom: 1px solid var(--border); white-space: nowrap;
@@ -286,14 +286,14 @@ table.data th {
 table.data td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
 table.data tbody tr:last-child td { border-bottom: 0; }
 table.data tbody tr:hover { background: var(--surface-2); }
-table.data td.actions { text-align: right; white-space: nowrap; }
+table.data td.actions { text-align: end; white-space: nowrap; }
 
 /* ------------------------------------------------------------- app shell */
 .app { display: flex; min-height: 100vh; }
 
 .sidebar {
   width: var(--sidebar-w); flex: none;
-  background: var(--surface); border-right: 1px solid var(--border);
+  background: var(--surface); border-inline-end: 1px solid var(--border);
   display: flex; flex-direction: column;
   position: sticky; top: 0; height: 100vh;
 }
@@ -324,7 +324,7 @@ table.data td.actions { text-align: right; white-space: nowrap; }
 @media (prefers-color-scheme: dark) { .sidebar-nav a.active { color: var(--brand); } }
 .sidebar-nav a .nav-icon { width: 18px; text-align: center; flex: none; }
 .sidebar-nav a .nav-count {
-  margin-left: auto; background: var(--brand); color: var(--brand-contrast);
+  margin-inline-start: auto; background: var(--brand); color: var(--brand-contrast);
   border-radius: var(--radius-full); padding: 1px 7px; font-size: .7rem; font-weight: 700;
 }
 .sidebar-foot { padding: 12px; border-top: 1px solid var(--border); }
@@ -348,6 +348,9 @@ table.data td.actions { text-align: right; white-space: nowrap; }
     box-shadow: var(--shadow-lg);
   }
   .sidebar.open { transform: translateX(0); }
+  /* The drawer slides in from the inline-start edge, which flips under RTL. */
+  [dir="rtl"] .sidebar { transform: translateX(100%); }
+  [dir="rtl"] .sidebar.open { transform: translateX(0); }
   .menu-toggle { display: inline-flex; }
   .scrim { position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 55; }
 }
@@ -430,7 +433,7 @@ table.data td.actions { text-align: right; white-space: nowrap; }
 .timeline li { display: flex; gap: 13px; padding-bottom: 18px; position: relative; }
 .timeline li:last-child { padding-bottom: 0; }
 .timeline li::before {
-  content: ""; position: absolute; left: 10px; top: 22px; bottom: 0;
+  content: ""; position: absolute; inset-inline-start: 10px; top: 22px; bottom: 0;
   width: 2px; background: var(--border);
 }
 .timeline li:last-child::before { display: none; }
@@ -446,9 +449,9 @@ table.data td.actions { text-align: right; white-space: nowrap; }
 
 /* ------------------------------------------------------------- kitchen KDS */
 .kds-board { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-.kds-card { border-left: 4px solid var(--border-strong); }
-.kds-card.age-warn { border-left-color: var(--warn); }
-.kds-card.age-late { border-left-color: var(--danger); }
+.kds-card { border-inline-start: 4px solid var(--border-strong); }
+.kds-card.age-warn { border-inline-start-color: var(--warn); }
+.kds-card.age-late { border-inline-start-color: var(--danger); }
 .kds-card .kds-line { display: flex; gap: 8px; padding: 5px 0; border-bottom: 1px dashed var(--border); }
 .kds-card .kds-line:last-child { border-bottom: 0; }
 .kds-qty {
@@ -555,7 +558,7 @@ table.data td.actions { text-align: right; white-space: nowrap; }
 .copy-field {
   display: flex; align-items: center; gap: 8px;
   background: var(--surface-2); border: 1px solid var(--border);
-  border-radius: var(--radius-sm); padding: 7px 8px 7px 12px;
+  border-radius: var(--radius-sm); padding-block: 7px; padding-inline: 12px 8px;
   font-family: var(--mono); font-size: .8rem; overflow: hidden;
 }
 
@@ -594,3 +597,30 @@ table.data td.actions { text-align: right; white-space: nowrap; }
   .card { box-shadow: none; border-color: #ccc; }
   .qr-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+
+/* ------------------------------------------------------------------- RTL */
+/* Layout is written with logical properties, so these are the few places
+   that still need an explicit direction-aware rule. */
+
+/* Emoji arrows and the QR/print glyphs read the wrong way when mirrored. */
+[dir="rtl"] .nav-icon,
+[dir="rtl"] .empty-icon { transform: none; }
+
+/* Codes, prices and machine identifiers stay left-to-right inside Arabic
+   text, so a code like "A7F3QK" is never reordered on screen. */
+[dir="rtl"] .mono,
+[dir="rtl"] .ltr { direction: ltr; unicode-bidi: isolate; text-align: start; }
+[dir="rtl"] .ltr-inline { direction: ltr; unicode-bidi: isolate; display: inline-block; }
+
+/* Numeric cells are isolated but NOT forced to LTR: forcing the direction
+   made a formatted price render as "15.59 US$" in a table and "$US 15.59"
+   in a stat tile. Isolation alone keeps one rendering everywhere. */
+[dir="rtl"] table.data td.right,
+[dir="rtl"] table.data th.right { unicode-bidi: isolate; }
+
+/* Charts are drawn in SVG user space; mirroring them would invert time. */
+[dir="rtl"] .chart svg { direction: ltr; }
+
+.lang-switch button { font-size: .78rem; padding: 4px 10px; }
+.lang-switch-compact button { padding: 3px 8px; font-size: .74rem; }

@@ -12,10 +12,11 @@
     <div class="guest-header-inner">
       <a class="btn btn-ghost btn-icon" href="/" aria-label="Home">🍽</a>
       <div class="grow" style="min-width:0">
-        <div id="head-title" class="strong truncate">Your order</div>
-        <div id="head-sub" class="tiny muted truncate">Loading…</div>
+        <div id="head-title" class="strong truncate" data-i18n="order.yourOrder">Your order</div>
+        <div id="head-sub" class="tiny muted truncate" data-i18n="common.loading">Loading…</div>
       </div>
-      <span id="live-dot" class="badge badge-ok" hidden><span class="dot"></span>Live</span>
+      <span data-lang-switch="compact"></span>
+      <span id="live-dot" class="badge badge-ok" hidden><span class="dot"></span><span data-i18n="order.live">Live</span></span>
     </div>
   </header>
 
@@ -26,6 +27,7 @@
     </div>
   </main>
 
+  <script src="/assets/js/i18n.js"></script>
   <script src="/assets/js/core.js"></script>
   <script src="/assets/js/pages/order.js"></script>
 </body>

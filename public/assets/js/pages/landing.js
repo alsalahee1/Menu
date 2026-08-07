@@ -5,13 +5,15 @@
 
   const { el, api, mount, toast, guard, $ } = window.App;
 
+  const t = (key, params) => window.I18n.t(key, params);
+
   async function loadRestaurants() {
     const host = $('#restaurant-list');
     try {
       const { restaurants } = await api.get('/public/restaurants', { anonymous: true });
 
       if (!restaurants.length) {
-        mount(host, el('div.empty', 'No demo restaurants yet. Run "npm run seed" to create them.'));
+        mount(host, el('div.empty', t('landing.noDemo')));
         return;
       }
 
@@ -25,22 +27,22 @@
           return el('div.card.card-pad', [
             el('div.row.between.top', [
               el('div.grow', [
-                el('h3', { style: { marginBottom: '2px' } }, restaurant.name),
-                el('div.small.muted', restaurant.cuisine || 'Restaurant'),
+                el('h3', { style: { marginBottom: '2px' } }, window.I18n.localised(restaurant, 'name')),
+                el('div.small.muted', restaurant.cuisine || t('landing.restaurant')),
               ]),
               restaurant.avg_rating
                 ? el('span.badge.badge-warn', `★ ${restaurant.avg_rating}`)
                 : null,
             ]),
-            el('p.small.muted.mt-8', { style: { minHeight: '2.6em' } }, restaurant.description || ''),
+            el('p.small.muted.mt-8', { style: { minHeight: '2.6em' } }, window.I18n.localised(restaurant, 'description')),
             el('div.row.gap-8.small.faint.mb-16', [
-              el('span', `${restaurant.item_count} dishes`),
+              el('span', `${restaurant.item_count} ${t('landing.dishes')}`),
               el('span', '·'),
               el('span', restaurant.currency),
             ]),
             el('div.row.gap-8', [
-              el('a.btn.btn-primary.btn-sm.grow', { href: tableLink }, 'Open a table'),
-              el('a.btn.btn-sm', { href: `/r/${restaurant.slug}` }, 'Menu'),
+              el('a.btn.btn-primary.btn-sm.grow', { href: tableLink }, t('landing.openATable')),
+              el('a.btn.btn-sm', { href: `/r/${restaurant.slug}` }, t('landing.menu')),
             ]),
           ]);
         })
@@ -51,7 +53,7 @@
       if (first) {
         const link = $('#hero-link');
         link.href = `/t/${first.slug}/${first.sample_table}`;
-        link.textContent = `Open ${first.name} · Table 1`;
+        link.textContent = `${t('landing.openATable')} · ${window.I18n.localised(first, 'name')}`;
 
         const qr = $('#hero-qr');
         qr.classList.remove('skeleton');
@@ -85,7 +87,7 @@
         { anonymous: true }
       );
       event.target.reset();
-      toast('Thanks — we will be in touch shortly.', 'success');
+      toast(t('landing.leadThanks'), 'success');
     })
   );
 

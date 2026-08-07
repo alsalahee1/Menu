@@ -8,7 +8,11 @@
     toast, modal, confirmDialog, guard, stream, params, debounce, viewRestaurant,
   } = window.App;
 
-  const shell = window.Shell.boot({ kind: 'restaurant', title: 'Live orders' });
+  const t = (key, params) => window.I18n.t(key, params);
+
+  const loc = (row, field) => window.I18n.localised(row, field);
+
+  const shell = window.Shell.boot({ kind: 'restaurant', title: t('nav.liveOrders') });
   if (!shell) return;
 
   const viewing = viewRestaurant.get();
@@ -17,11 +21,11 @@
 
   // The button shown on a card is whatever comes next in the service flow.
   const NEXT_ACTION = {
-    pending: { status: 'accepted', label: 'Accept' },
-    accepted: { status: 'preparing', label: 'Start cooking' },
-    preparing: { status: 'ready', label: 'Mark ready' },
-    ready: { status: 'served', label: 'Mark served' },
-    served: { status: 'completed', label: 'Close order' },
+    pending: { status: 'accepted', label: 'board.accept' },
+    accepted: { status: 'preparing', label: 'board.startCooking' },
+    preparing: { status: 'ready', label: 'board.markReady' },
+    ready: { status: 'served', label: 'board.markServed' },
+    served: { status: 'completed', label: 'board.closeOrder' },
   };
 
   const state = { status: 'active', q: '', from: '', to: '', orders: [] };
@@ -31,15 +35,16 @@
   shell.page.append(filterBar, listHost);
 
   shell.setActions([
-    el('a.btn.btn-sm', { href: '/dashboard/kitchen.html' }, '👨‍🍳 Kitchen display'),
-    el('button.btn.btn-sm', { onclick: () => load() }, '↻ Refresh'),
+    el('a.btn.btn-sm', { href: '/dashboard/kitchen.html' }, `👨‍🍳 ${t('nav.kitchen')}`),
+    el('button.btn.btn-sm', { onclick: () => load() }, `↻ ${t('common.refresh')}`),
   ]);
 
   // ------------------------------------------------------------- filters ---
   function renderFilters() {
     const statuses = [
-      ['active', 'In progress'], ['pending', 'Pending'], ['preparing', 'Preparing'],
-      ['ready', 'Ready'], ['completed', 'Completed'], ['cancelled', 'Cancelled'], ['', 'All'],
+      ['active', t('board.inProgress')], ['pending', t('status.pending')], ['preparing', t('status.preparing')],
+      ['ready', t('status.ready')], ['completed', t('status.completed')], ['cancelled', t('status.cancelled')],
+      ['', t('common.all')],
     ];
 
     mount(filterBar, [
@@ -53,13 +58,13 @@
         )),
         el('div.grow'),
         el('input', {
-          type: 'search', placeholder: 'Search code, guest or table', value: state.q,
+          type: 'search', placeholder: t('board.searchPlaceholder'), value: state.q,
           style: { maxWidth: '240px' },
           oninput: debounce((event) => { state.q = event.target.value; load(); }, 300),
         }),
-        el('input', { type: 'date', value: state.from, style: { maxWidth: '160px' }, title: 'From',
+        el('input', { type: 'date', value: state.from, style: { maxWidth: '160px' }, title: t('common.from'),
           onchange: (event) => { state.from = event.target.value; load(); } }),
-        el('input', { type: 'date', value: state.to, style: { maxWidth: '160px' }, title: 'To',
+        el('input', { type: 'date', value: state.to, style: { maxWidth: '160px' }, title: t('common.to'),
           onchange: (event) => { state.to = event.target.value; load(); } }),
       ]),
     ]);
@@ -86,13 +91,13 @@
     if (!state.orders.length) {
       mount(listHost, el('div.card.empty', [
         el('div.empty-icon', '🧾'),
-        el('p', state.status === 'active' ? 'No orders in progress. Enjoy the quiet.' : 'No orders match these filters.'),
+        el('p', state.status === 'active' ? t('board.nothingActive') : t('board.noMatch')),
       ]));
       return;
     }
 
     mount(listHost, [
-      el('div.small.muted.mb-8', `${state.orders.length} order${state.orders.length === 1 ? '' : 's'}`),
+      el('div.small.muted.mb-8', t('board.orderCount', { n: state.orders.length })),
       el('div.grid.grid-3', state.orders.map(orderCard)),
     ]);
   }
@@ -107,30 +112,30 @@
       el('div.card-head', [
         el('div', [
           el('div.row.gap-8', [
-            el('strong.mono', order.code),
-            order.type === 'takeaway' ? el('span.badge.badge-info', 'Takeaway') : null,
+            el('strong.mono.ltr-inline', order.code),
+            order.type === 'takeaway' ? el('span.badge.badge-info', t('common.takeaway')) : null,
           ]),
-          el('div.tiny.muted', order.table_label || 'Takeaway'),
+          el('div.tiny.muted', order.table_label || t('common.takeaway')),
         ]),
         statusBadge(order.status),
       ]),
       el('div.card-body', { style: { padding: '14px' } }, [
         el('div.row.between.small.mb-8', [
-          el('span.muted', `${order.line_count} item${order.line_count === 1 ? '' : 's'}`),
+          el('span.muted', `${order.line_count} ${t('common.items')}`),
           el('span.strong', money(order.total, currency)),
         ]),
         order.customer_name ? el('div.small.mb-8', `👤 ${order.customer_name}`) : null,
         order.note ? el('div.small.muted.mb-8', `📝 ${order.note}`) : null,
         el('div.row.between.tiny.faint.mb-16', [
           el('span', formatTime(order.placed_at)),
-          el('span', isActive ? `${minutes} min ago` : timeAgo(order.updated_at)),
+          el('span', isActive ? t('board.minAgo', { n: minutes }) : timeAgo(order.updated_at)),
         ]),
         el('div.row.gap-8', [
-          el('button.btn.btn-sm.grow', { onclick: () => openOrder(order.id) }, 'Details'),
+          el('button.btn.btn-sm.grow', { onclick: () => openOrder(order.id) }, t('common.details')),
           next
             ? el('button.btn.btn-primary.btn-sm.grow', {
                 onclick: (event) => advance(event.currentTarget, order.id, next.status),
-              }, next.label)
+              }, t(next.label))
             : null,
         ]),
       ]),
@@ -139,7 +144,7 @@
 
   const advance = guard(async (button, orderId, status) => {
     await window.App.withBusy(button, () => api.patch(`/rest/orders/${orderId}/status`, { status }));
-    toast(`Order marked ${statusLabel(status).toLowerCase()}`, 'success');
+    toast(t('board.markedAs', { status: statusLabel(status) }), 'success');
     load();
   });
 
@@ -149,23 +154,23 @@
 
     const handle = modal({
       wide: true,
-      title: `Order ${order.code}`,
+      title: t('order.title', { code: order.code }),
       body: [
         el('div.row.wrap.between.gap-8.mb-16', [
           el('div', [
-            el('div.strong', order.table_label || 'Takeaway'),
+            el('div.strong', order.table_label || t('common.takeaway')),
             el('div.small.muted', formatDateTime(order.placed_at)),
           ]),
           el('div.row.gap-8', [
             statusBadge(order.status),
             el('span.badge', { class: order.payment_status === 'paid' ? 'badge-ok' : 'badge-warn' },
-              order.payment_status === 'paid' ? `Paid · ${order.payment_method}` : 'Unpaid'),
+              order.payment_status === 'paid' ? `${t('common.paid')} · ${order.payment_method}` : t('common.unpaid')),
           ]),
         ]),
 
         order.customer_name || order.customer_phone
           ? el('div.card.card-pad.mb-16', [
-              el('div.small.strong', 'Guest'),
+              el('div.small.strong', t('board.guest')),
               el('div.small.muted', [order.customer_name, order.customer_phone].filter(Boolean).join(' · ')),
             ])
           : null,
@@ -176,14 +181,14 @@
           : null,
 
         el('div.table-wrap.mb-16', el('table.data', [
-          el('thead', el('tr', [el('th', 'Qty'), el('th', 'Item'), el('th.right', 'Unit'), el('th.right', 'Total')])),
+          el('thead', el('tr', [el('th', t('common.qty')), el('th', t('common.item')), el('th.right', t('board.unit')), el('th.right', t('common.total'))])),
           el('tbody', order.items.map((line) =>
             el('tr', [
               el('td.strong', `${line.qty}×`),
               el('td', [
                 el('div', line.name_snapshot),
                 line.options.length ? el('div.tiny.muted', line.options.map((o) => o.name).join(' · ')) : null,
-                line.note ? el('div.tiny', { style: { color: 'var(--warn)' } }, `Note: ${line.note}`) : null,
+                line.note ? el('div.tiny', { style: { color: 'var(--warn)' } }, `${t('common.note')}: ${line.note}`) : null,
               ]),
               el('td.right.small', money(line.unit_price, currency)),
               el('td.right.small', money(line.line_total, currency)),
@@ -192,14 +197,14 @@
         ])),
 
         el('div.col.gap-4.small.mb-16', [
-          totalRow('Subtotal', order.subtotal),
-          order.service_charge ? totalRow('Service charge', order.service_charge) : null,
-          order.tax ? totalRow('Tax', order.tax) : null,
+          totalRow(t('common.subtotal'), order.subtotal),
+          order.service_charge ? totalRow(t('common.serviceCharge'), order.service_charge) : null,
+          order.tax ? totalRow(t('common.tax'), order.tax) : null,
           el('hr', { style: { margin: '6px 0' } }),
-          el('div.row.between', [el('strong', 'Total'), el('strong', money(order.total, currency))]),
+          el('div.row.between', [el('strong', t('common.total')), el('strong', money(order.total, currency))]),
         ]),
 
-        el('h3', 'Timeline'),
+        el('h3', t('board.timeline')),
         el('ul.timeline', order.timeline.map((event) =>
           el('li.done', [
             el('span.tl-dot', '•'),
@@ -224,30 +229,30 @@
             ? el('button.btn.btn-danger', {
                 onclick: async () => {
                   const ok = await confirmDialog({
-                    title: `Cancel order ${order.code}?`,
-                    message: 'The guest will be notified immediately. This cannot be undone.',
-                    confirmLabel: 'Cancel order',
-                    cancelLabel: 'Keep it',
+                    title: t('board.cancelTitle', { code: order.code }),
+                    message: t('board.cancelBody'),
+                    confirmLabel: t('board.cancelOrder'),
+                    cancelLabel: t('order.keepIt'),
                   });
                   if (!ok) return;
                   await api.patch(`/rest/orders/${order.id}/status`, { status: 'cancelled', note: 'Cancelled by staff' });
                   h.close();
-                  toast('Order cancelled', 'success');
+                  toast(t('board.cancelTitle', { code: order.code }), 'success');
                   load();
                 },
-              }, 'Cancel order')
+              }, t('board.cancelOrder'))
             : null,
-          el('button.btn', { onclick: h.close }, 'Close'),
+          el('button.btn', { onclick: h.close }, t('common.close')),
           next
             ? el('button.btn.btn-primary', {
                 onclick: guard(async (event) => {
                   await window.App.withBusy(event.currentTarget, () =>
                     api.patch(`/rest/orders/${order.id}/status`, { status: next.status }));
                   h.close();
-                  toast(`Order marked ${statusLabel(next.status).toLowerCase()}`, 'success');
+                  toast(t('board.markedAs', { status: statusLabel(next.status) }), 'success');
                   load();
                 }),
-              }, next.label)
+              }, t(next.label))
             : null,
         ].filter(Boolean);
       },
@@ -260,7 +265,7 @@
 
   function paymentControls(order, handle) {
     return el('div.card.card-pad.mt-16', [
-      el('h3', 'Payment'),
+      el('h3', t('board.payment')),
       el('div.row.wrap.gap-8', [
         el('select', { id: 'pay-method', style: { maxWidth: '160px' } },
           ['cash', 'card', 'online'].map((method) =>
@@ -273,19 +278,19 @@
               payment_method: $('#pay-method').value,
             });
             handle.close();
-            toast('Marked as paid', 'success');
+            toast(t('board.markedPaid'), 'success');
             load();
           }),
-        }, 'Mark as paid'),
+        }, t('board.markPaid')),
         order.payment_status === 'paid'
           ? el('button.btn.btn-sm', {
               onclick: guard(async () => {
                 await api.patch(`/rest/orders/${order.id}/payment`, { payment_status: 'refunded' });
                 handle.close();
-                toast('Marked as refunded', 'success');
+                toast(t('board.markedRefunded'), 'success');
                 load();
               }),
-            }, 'Refund')
+            }, t('board.refund'))
           : null,
       ]),
     ]);
@@ -298,7 +303,7 @@
   const refresh = debounce(load, 800);
   stream('/rest/stream', {
     'order.created': (order) => {
-      toast(`New order ${order.code} · ${order.table_label || 'Takeaway'}`, 'success');
+      toast(t('board.newOrder', { code: order.code, table: order.table_label || t('common.takeaway') }), 'success');
       refresh();
     },
     'order.updated': refresh,

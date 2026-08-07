@@ -13,8 +13,11 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS restaurants (
   id                  INTEGER PRIMARY KEY AUTOINCREMENT,
   name                TEXT    NOT NULL,
+  -- Optional Arabic copy. Empty means "fall back to the primary field".
+  name_ar             TEXT    NOT NULL DEFAULT '',
   slug                TEXT    NOT NULL UNIQUE,
   description         TEXT    NOT NULL DEFAULT '',
+  description_ar      TEXT    NOT NULL DEFAULT '',
   cuisine             TEXT    NOT NULL DEFAULT '',
   logo_url            TEXT    NOT NULL DEFAULT '',
   cover_url           TEXT    NOT NULL DEFAULT '',
@@ -33,6 +36,8 @@ CREATE TABLE IF NOT EXISTS restaurants (
   accepts_orders      INTEGER NOT NULL DEFAULT 1,
   -- Require staff to accept an order before the kitchen sees it
   auto_accept_orders  INTEGER NOT NULL DEFAULT 0,
+  -- Let guests pay from their phone instead of settling with a staff member
+  online_payments_enabled INTEGER NOT NULL DEFAULT 0,
   opening_hours       TEXT    NOT NULL DEFAULT '',
   created_at          TEXT    NOT NULL DEFAULT (datetime('now')),
   updated_at          TEXT    NOT NULL DEFAULT (datetime('now'))
@@ -79,7 +84,9 @@ CREATE TABLE IF NOT EXISTS categories (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   name          TEXT    NOT NULL,
+  name_ar       TEXT    NOT NULL DEFAULT '',
   description   TEXT    NOT NULL DEFAULT '',
+  description_ar TEXT   NOT NULL DEFAULT '',
   icon          TEXT    NOT NULL DEFAULT '',
   sort_order    INTEGER NOT NULL DEFAULT 0,
   is_active     INTEGER NOT NULL DEFAULT 1,
@@ -92,7 +99,9 @@ CREATE TABLE IF NOT EXISTS menu_items (
   restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
   category_id   INTEGER REFERENCES categories(id) ON DELETE SET NULL,
   name          TEXT    NOT NULL,
+  name_ar       TEXT    NOT NULL DEFAULT '',
   description   TEXT    NOT NULL DEFAULT '',
+  description_ar TEXT   NOT NULL DEFAULT '',
   price         REAL    NOT NULL CHECK (price >= 0),
   image_url     TEXT    NOT NULL DEFAULT '',
   is_available  INTEGER NOT NULL DEFAULT 1,
@@ -113,6 +122,7 @@ CREATE TABLE IF NOT EXISTS option_groups (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   item_id       INTEGER NOT NULL REFERENCES menu_items(id) ON DELETE CASCADE,
   name          TEXT    NOT NULL,
+  name_ar       TEXT    NOT NULL DEFAULT '',
   min_select    INTEGER NOT NULL DEFAULT 0,
   max_select    INTEGER NOT NULL DEFAULT 1,
   sort_order    INTEGER NOT NULL DEFAULT 0
@@ -123,6 +133,7 @@ CREATE TABLE IF NOT EXISTS options (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id      INTEGER NOT NULL REFERENCES option_groups(id) ON DELETE CASCADE,
   name          TEXT    NOT NULL,
+  name_ar       TEXT    NOT NULL DEFAULT '',
   price_delta   REAL    NOT NULL DEFAULT 0,
   is_available  INTEGER NOT NULL DEFAULT 1,
   sort_order    INTEGER NOT NULL DEFAULT 0
@@ -153,6 +164,8 @@ CREATE TABLE IF NOT EXISTS orders (
   payment_method TEXT    NOT NULL DEFAULT 'cash' CHECK (payment_method IN ('cash','card','online')),
   -- Anonymous browser identity so a guest can list their own orders
   session_id     TEXT    NOT NULL DEFAULT '',
+  -- Provider-side id for an online payment, blank for cash/card at the table
+  payment_reference TEXT NOT NULL DEFAULT '',
   cancel_reason  TEXT    NOT NULL DEFAULT '',
   placed_at      TEXT    NOT NULL DEFAULT (datetime('now')),
   updated_at     TEXT    NOT NULL DEFAULT (datetime('now'))
@@ -216,6 +229,32 @@ CREATE TABLE IF NOT EXISTS reviews (
   UNIQUE (order_id)
 );
 CREATE INDEX IF NOT EXISTS idx_reviews_restaurant ON reviews(restaurant_id);
+
+-- ---------------------------------------------------------------------
+-- Online payments
+--
+-- One row per attempt, so a retry after a decline leaves a trail. The
+-- order's payment_status stays the single source of truth for "is it paid".
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS payments (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  restaurant_id INTEGER NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+  order_id      INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  -- Opaque reference the guest's browser holds while paying
+  reference     TEXT    NOT NULL UNIQUE,
+  provider      TEXT    NOT NULL DEFAULT 'mock',
+  -- Provider's own identifier, e.g. a Stripe PaymentIntent id
+  provider_ref  TEXT    NOT NULL DEFAULT '',
+  amount        REAL    NOT NULL,
+  currency      TEXT    NOT NULL,
+  status        TEXT    NOT NULL DEFAULT 'requires_payment'
+                CHECK (status IN ('requires_payment','processing','succeeded','failed','cancelled','refunded')),
+  failure_reason TEXT   NOT NULL DEFAULT '',
+  created_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_payments_order ON payments(order_id);
+CREATE INDEX IF NOT EXISTS idx_payments_restaurant ON payments(restaurant_id, status);
 
 -- ---------------------------------------------------------------------
 -- Who changed what (platform + restaurant admin actions)

@@ -4,28 +4,30 @@
   'use strict';
 
   const { el, api, auth, viewRestaurant, toast, modal, guard, $ } = window.App;
+  const t = (key, params) => window.I18n.t(key, params);
 
+  // Labels are translation keys, resolved at render time.
   const RESTAURANT_NAV = [
-    { section: 'Service' },
-    { href: '/dashboard/', icon: '📊', label: 'Overview', roles: ['owner', 'manager'] },
-    { href: '/dashboard/orders.html', icon: '🧾', label: 'Live orders' },
-    { href: '/dashboard/kitchen.html', icon: '👨‍🍳', label: 'Kitchen display' },
-    { href: '/dashboard/requests.html', icon: '🔔', label: 'Guest requests', badge: 'requests' },
-    { href: '/dashboard/tables.html', icon: '🪑', label: 'Tables & QR codes' },
-    { section: 'Manage', roles: ['owner', 'manager'] },
-    { href: '/dashboard/menu.html', icon: '🍽️', label: 'Menu', roles: ['owner', 'manager'] },
-    { href: '/dashboard/reports.html', icon: '📈', label: 'Reports', roles: ['owner', 'manager'] },
-    { href: '/dashboard/staff.html', icon: '👥', label: 'Staff', roles: ['owner', 'manager'] },
-    { href: '/dashboard/settings.html', icon: '⚙️', label: 'Settings', roles: ['owner', 'manager'] },
+    { section: 'nav.service' },
+    { href: '/dashboard/', icon: '📊', label: 'nav.overview', roles: ['owner', 'manager'] },
+    { href: '/dashboard/orders.html', icon: '🧾', label: 'nav.liveOrders' },
+    { href: '/dashboard/kitchen.html', icon: '👨‍🍳', label: 'nav.kitchen' },
+    { href: '/dashboard/requests.html', icon: '🔔', label: 'nav.requests', badge: 'requests' },
+    { href: '/dashboard/tables.html', icon: '🪑', label: 'nav.tables' },
+    { section: 'nav.manage', roles: ['owner', 'manager'] },
+    { href: '/dashboard/menu.html', icon: '🍽️', label: 'nav.menu', roles: ['owner', 'manager'] },
+    { href: '/dashboard/reports.html', icon: '📈', label: 'nav.reports', roles: ['owner', 'manager'] },
+    { href: '/dashboard/staff.html', icon: '👥', label: 'nav.staff', roles: ['owner', 'manager'] },
+    { href: '/dashboard/settings.html', icon: '⚙️', label: 'nav.settings', roles: ['owner', 'manager'] },
   ];
 
   const ADMIN_NAV = [
-    { section: 'Platform' },
-    { href: '/admin/', icon: '📊', label: 'Overview' },
-    { href: '/admin/restaurants.html', icon: '🏪', label: 'Restaurants' },
-    { href: '/admin/users.html', icon: '👥', label: 'Users' },
-    { href: '/admin/orders.html', icon: '🧾', label: 'All orders' },
-    { href: '/admin/audit.html', icon: '🛡️', label: 'Audit log' },
+    { section: 'nav.platform' },
+    { href: '/admin/', icon: '📊', label: 'nav.overview' },
+    { href: '/admin/restaurants.html', icon: '🏪', label: 'nav.restaurants' },
+    { href: '/admin/users.html', icon: '👥', label: 'nav.users' },
+    { href: '/admin/orders.html', icon: '🧾', label: 'nav.allOrders' },
+    { href: '/admin/audit.html', icon: '🛡️', label: 'nav.audit' },
   ];
 
   function isCurrent(href) {
@@ -51,20 +53,20 @@
     const viewing = viewRestaurant.get();
 
     const contextName = options.kind === 'admin'
-      ? 'Platform console'
-      : (viewing && viewing.name) || (user.restaurant && user.restaurant.name) || 'Restaurant';
+      ? t('nav.platformConsole')
+      : (viewing && viewing.name) || (user.restaurant && user.restaurant.name) || t('landing.restaurant');
 
     // ---- sidebar --------------------------------------------------------
     const navList = el('nav.sidebar-nav');
     for (const entry of nav) {
       if (entry.roles && !entry.roles.includes(user.role) && user.role !== 'super_admin') continue;
       if (entry.section) {
-        navList.appendChild(el('div.sidebar-section', entry.section));
+        navList.appendChild(el('div.sidebar-section', t(entry.section)));
         continue;
       }
       const link = el('a', { href: entry.href, class: isCurrent(entry.href) ? 'active' : '' }, [
         el('span.nav-icon', entry.icon),
-        el('span.grow', entry.label),
+        el('span.grow', t(entry.label)),
       ]);
       if (entry.badge) link.dataset.badge = entry.badge;
       navList.appendChild(link);
@@ -82,10 +84,11 @@
             el('div.small.strong.truncate', user.name),
             el('div.tiny.faint', user.role.replace('_', ' ')),
           ]),
-          el('button.btn.btn-ghost.btn-sm', { onclick: () => auth.logout(), title: 'Sign out' }, 'Sign out'),
+          el('button.btn.btn-ghost.btn-sm', { onclick: () => auth.logout() }, t('common.signOut')),
         ]),
+        el('div.mt-8', { style: { display: 'flex', justifyContent: 'center' } }, [window.I18n.switcher({ compact: true })]),
         el('div.mt-8', [
-          el('a.btn.btn-sm.btn-block', { href: '/', target: '_blank' }, 'View guest site ↗'),
+          el('a.btn.btn-sm.btn-block', { href: '/', target: '_blank' }, `${t('nav.viewGuestSite')} ↗`),
         ]),
       ]),
     ]);
@@ -117,10 +120,10 @@
           alignItems: 'center', justifyContent: 'space-between', gap: '12px',
         },
       }, [
-        el('span', `Platform admin view — you are managing "${viewing.name}"`),
+        el('span', t('nav.adminViewing', { name: viewing.name })),
         el('button.btn.btn-sm', {
           onclick: () => { viewRestaurant.clear(); location.href = '/admin/restaurants.html'; },
-        }, 'Exit'),
+        }, t('nav.exit')),
       ]);
     }
 
@@ -166,30 +169,30 @@
   /** Reusable "change my password" dialog for the settings pages. */
   function passwordDialog() {
     modal({
-      title: 'Change your password',
+      title: t('staff.changePasswordTitle'),
       body: el('form#pwd-form', [
         el('div.field', [
-          el('label', { for: 'pw-current' }, 'Current password'),
+          el('label', { for: 'pw-current' }, t('staff.currentPassword')),
           el('input', { type: 'password', id: 'pw-current', required: true, autocomplete: 'current-password' }),
         ]),
         el('div.field', [
-          el('label', { for: 'pw-new' }, 'New password'),
+          el('label', { for: 'pw-new' }, t('staff.newPasswordLabel')),
           el('input', { type: 'password', id: 'pw-new', required: true, minlength: 8, autocomplete: 'new-password' }),
-          el('div.hint', 'At least 8 characters.'),
+          el('div.hint', t('staff.passwordHint')),
         ]),
       ]),
       actions: (handle) => [
-        el('button.btn', { onclick: handle.close }, 'Cancel'),
+        el('button.btn', { onclick: handle.close }, t('common.cancel')),
         el('button.btn.btn-primary', {
           onclick: guard(async () => {
             const current = $('#pw-current').value;
             const next = $('#pw-new').value;
-            if (next.length < 8) return toast('New password must be at least 8 characters', 'error');
+            if (next.length < 8) return toast(t('staff.passwordHint'), 'error');
             await api.post('/auth/change-password', { current_password: current, new_password: next });
             handle.close();
-            return toast('Password updated', 'success');
+            return toast(t('staff.passwordUpdated'), 'success');
           }),
-        }, 'Update password'),
+        }, t('staff.updatePassword')),
       ],
     });
   }
