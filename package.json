@@ -1,0 +1,23 @@
+{
+  "name": "menu-qr-ordering",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-tenant restaurant QR-code ordering platform: customer ordering, restaurant dashboard, kitchen display and platform admin.",
+  "type": "commonjs",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "seed": "node server/db/seed.js",
+    "reset": "node server/db/seed.js --reset",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.4.1",
+    "express": "^5.2.1",
+    "qrcode": "^1.5.4"
+  }
+}

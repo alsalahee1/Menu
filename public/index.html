@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Menu — scan, order, eat</title>
+  <meta name="description" content="QR-code ordering for restaurants: guests scan the code on the table, order from their phone, and the kitchen sees it instantly.">
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+</head>
+<body>
+  <header class="guest-header">
+    <div class="container row between" style="padding-top:11px;padding-bottom:11px">
+      <a class="row gap-8" href="/" style="color:inherit;font-weight:700">
+        <span class="logo-mark" style="width:30px;height:30px;border-radius:9px;background:var(--brand);color:var(--brand-contrast);display:grid;place-items:center">🍽</span>
+        <span>Menu</span>
+      </a>
+      <nav class="row gap-8">
+        <a class="btn btn-sm btn-ghost" href="/orders">My orders</a>
+        <a class="btn btn-sm" href="/login">Staff sign in</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="container" style="padding-top:44px;padding-bottom:12px">
+      <div class="grid grid-2" style="align-items:center;gap:36px">
+        <div>
+          <span class="badge badge-brand mb-16">No app · No waiting</span>
+          <h1 style="font-size:2.3rem;line-height:1.15;margin-top:10px">
+            Scan the code on your table. Order in seconds.
+          </h1>
+          <p class="muted" style="font-size:1.05rem;max-width:46ch">
+            Guests scan a QR code, browse the live menu, and send their order straight
+            to the kitchen. Staff track every ticket on one screen — no paper, no shouting
+            across the pass.
+          </p>
+          <div class="row wrap gap-8 mt-24">
+            <a class="btn btn-primary btn-lg" href="#demo">Try a live table</a>
+            <a class="btn btn-lg" href="/login">Staff sign in</a>
+          </div>
+          <p class="small faint mt-16">
+            Demo accounts are listed at the bottom of this page.
+          </p>
+        </div>
+
+        <div class="card card-pad" style="max-width:340px;margin:0 auto;width:100%">
+          <div class="center">
+            <div id="hero-qr" style="width:190px;height:190px;margin:0 auto 14px" class="skeleton"></div>
+            <div class="strong">Table 1 · Zaytoun Grill</div>
+            <p class="small muted mt-8" style="margin-bottom:14px">
+              Point your phone camera at this code, or tap the button below.
+            </p>
+            <a id="hero-link" class="btn btn-primary btn-block" href="#demo">Open this table</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="container" style="padding-top:48px">
+      <h2 class="center">How it works</h2>
+      <div class="grid grid-4 mt-24">
+        <div class="card card-pad">
+          <div style="font-size:1.8rem">📱</div>
+          <h3 class="mt-8">1 · Scan</h3>
+          <p class="small muted" style="margin:0">Every table has its own QR code. Scanning opens that table's menu — no typing, no app install.</p>
+        </div>
+        <div class="card card-pad">
+          <div style="font-size:1.8rem">🛒</div>
+          <h3 class="mt-8">2 · Order</h3>
+          <p class="small muted" style="margin:0">Browse by category, pick sizes and extras, add a note for the kitchen, then send.</p>
+        </div>
+        <div class="card card-pad">
+          <div style="font-size:1.8rem">👨‍🍳</div>
+          <h3 class="mt-8">3 · Kitchen</h3>
+          <p class="small muted" style="margin:0">The ticket appears instantly on the kitchen display, colour-coded by how long it has been waiting.</p>
+        </div>
+        <div class="card card-pad">
+          <div style="font-size:1.8rem">🍲</div>
+          <h3 class="mt-8">4 · Served</h3>
+          <p class="small muted" style="margin:0">Guests watch the status live, call a waiter, or ask for the bill with one tap.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="container" id="demo" style="padding-top:52px">
+      <h2>Live demo restaurants</h2>
+      <p class="muted">Open a table exactly the way a guest would after scanning.</p>
+      <div id="restaurant-list" class="grid grid-3 mt-16"></div>
+    </section>
+
+    <section class="container" style="padding-top:52px">
+      <div class="grid grid-2">
+        <div class="card card-pad">
+          <h2>Built for the whole restaurant</h2>
+          <ul class="muted" style="padding-left:20px;line-height:1.9;margin:0">
+            <li><strong>Guests</strong> — menu, cart, live tracking, call waiter, request bill, leave a review.</li>
+            <li><strong>Waiters</strong> — order board, table map, guest requests, mark items sold out.</li>
+            <li><strong>Kitchen</strong> — a display that only shows what needs cooking, oldest first.</li>
+            <li><strong>Managers</strong> — menu editor with options and extras, QR code sheets, staff accounts, sales reports.</li>
+            <li><strong>Platform admins</strong> — onboard restaurants, manage plans, audit every action.</li>
+          </ul>
+        </div>
+        <div class="card card-pad">
+          <h2>Demo sign-in accounts</h2>
+          <div class="table-wrap">
+            <table class="data">
+              <thead><tr><th>Role</th><th>Email</th><th>Password</th></tr></thead>
+              <tbody>
+                <tr><td>Platform admin</td><td class="mono tiny">admin@menu.app</td><td class="mono tiny">Admin123!</td></tr>
+                <tr><td>Owner</td><td class="mono tiny">owner@zaytoun.test</td><td class="mono tiny">Owner123!</td></tr>
+                <tr><td>Manager</td><td class="mono tiny">manager@zaytoun.test</td><td class="mono tiny">Manager123!</td></tr>
+                <tr><td>Waiter</td><td class="mono tiny">waiter@zaytoun.test</td><td class="mono tiny">Waiter123!</td></tr>
+                <tr><td>Kitchen</td><td class="mono tiny">kitchen@zaytoun.test</td><td class="mono tiny">Kitchen123!</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="container" style="padding-top:52px;padding-bottom:64px">
+      <div class="card card-pad" style="max-width:560px;margin:0 auto">
+        <h2>Interested in this for your restaurant?</h2>
+        <p class="muted small">Leave your details and we will get in touch.</p>
+        <form id="lead-form">
+          <div class="form-grid">
+            <div class="field">
+              <label for="lead-name">Your name</label>
+              <input id="lead-name" type="text" required maxlength="120" autocomplete="name">
+            </div>
+            <div class="field">
+              <label for="lead-restaurant">Restaurant</label>
+              <input id="lead-restaurant" type="text" maxlength="120" autocomplete="organization">
+            </div>
+            <div class="field full">
+              <label for="lead-email">Email</label>
+              <input id="lead-email" type="email" required maxlength="200" autocomplete="email">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" type="submit">Request a callback</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer style="border-top:1px solid var(--border);padding:22px 0;background:var(--surface)">
+    <div class="container row between wrap gap-8">
+      <span class="small muted">Menu — QR ordering platform</span>
+      <span class="row gap-16 small">
+        <a href="/login">Staff sign in</a>
+        <a href="/admin/">Platform admin</a>
+        <a href="/orders">My orders</a>
+      </span>
+    </div>
+  </footer>
+
+  <script src="/assets/js/core.js"></script>
+  <script src="/assets/js/pages/landing.js"></script>
+</body>
+</html>

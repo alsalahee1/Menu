@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Menu</title>
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+</head>
+<body>
+  <header class="guest-header">
+    <div class="guest-header-inner">
+      <a class="btn btn-ghost btn-icon" href="/" aria-label="Home">🍽</a>
+      <div class="grow" style="min-width:0">
+        <div id="r-name" class="strong truncate">Loading…</div>
+        <div id="r-context" class="tiny muted truncate"></div>
+      </div>
+      <button id="help-btn" class="btn btn-sm" type="button">Help</button>
+    </div>
+  </header>
+
+  <div id="cat-tabs" class="cat-tabs" role="tablist" hidden></div>
+
+  <main class="guest-main">
+    <div id="content">
+      <div class="hero-cover skeleton" style="margin-bottom:18px"></div>
+      <div class="skeleton" style="height:80px;margin-bottom:12px"></div>
+      <div class="skeleton" style="height:80px;margin-bottom:12px"></div>
+      <div class="skeleton" style="height:80px"></div>
+    </div>
+  </main>
+
+  <div id="cart-bar" class="cart-bar" hidden>
+    <div class="cart-bar-inner">
+      <div class="grow">
+        <div id="cart-count" class="small muted">0 items</div>
+        <div id="cart-total" class="strong" style="font-size:1.1rem">—</div>
+      </div>
+      <button id="view-cart" class="btn btn-primary btn-lg" type="button">View cart</button>
+    </div>
+  </div>
+
+  <script src="/assets/js/core.js"></script>
+  <script src="/assets/js/pages/menu.js"></script>
+</body>
+</html>

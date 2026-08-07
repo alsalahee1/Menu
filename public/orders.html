@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My orders</title>
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+</head>
+<body>
+  <header class="guest-header">
+    <div class="guest-header-inner">
+      <a class="btn btn-ghost btn-icon" href="/" aria-label="Home">🍽</a>
+      <div class="grow"><div class="strong">My orders</div><div class="tiny muted">On this device</div></div>
+    </div>
+  </header>
+
+  <main class="guest-main" style="padding-top:18px">
+    <div class="card card-pad mb-16">
+      <h3>Find an order by code</h3>
+      <form id="lookup-form" class="row gap-8">
+        <input id="lookup-code" type="text" placeholder="e.g. A7F3QK" maxlength="10"
+               autocomplete="off" autocapitalize="characters" class="grow" required>
+        <button class="btn btn-primary" type="submit">Track</button>
+      </form>
+    </div>
+
+    <h2>Recent orders</h2>
+    <div id="list"><div class="skeleton" style="height:90px"></div></div>
+  </main>
+
+  <script src="/assets/js/core.js"></script>
+  <script src="/assets/js/pages/orders.js"></script>
+</body>
+</html>

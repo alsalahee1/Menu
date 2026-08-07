@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Your order</title>
+  <link rel="stylesheet" href="/assets/css/app.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>">
+</head>
+<body>
+  <header class="guest-header">
+    <div class="guest-header-inner">
+      <a class="btn btn-ghost btn-icon" href="/" aria-label="Home">🍽</a>
+      <div class="grow" style="min-width:0">
+        <div id="head-title" class="strong truncate">Your order</div>
+        <div id="head-sub" class="tiny muted truncate">Loading…</div>
+      </div>
+      <span id="live-dot" class="badge badge-ok" hidden><span class="dot"></span>Live</span>
+    </div>
+  </header>
+
+  <main class="guest-main" style="padding-top:18px">
+    <div id="content">
+      <div class="skeleton" style="height:150px;margin-bottom:14px"></div>
+      <div class="skeleton" style="height:220px"></div>
+    </div>
+  </main>
+
+  <script src="/assets/js/core.js"></script>
+  <script src="/assets/js/pages/order.js"></script>
+</body>
+</html>
