@@ -263,7 +263,9 @@ docker compose exec app npm run seed    # optional demo data
 ```
 
 The image is multi-stage (`node:22-bookworm-slim`), runs as the non-root `node`
-user, and carries a `HEALTHCHECK`. The database and uploaded images both live
+user, and carries a `HEALTHCHECK`. CI builds it, runs it, waits for health and
+seeds inside the container on every push, so the native `better-sqlite3` step
+and the non-root file permissions are verified continuously rather than assumed. The database and uploaded images both live
 under `/data`, so a single volume covers all persistent state and a redeploy
 keeps everything.
 
@@ -363,11 +365,13 @@ implied:
   `server/middleware/rateLimit.js` are the files that would change.
 - **Uploaded images are not resized or re-encoded.** A 3 MB photo is served at
   3 MB. Put a CDN or an image pipeline in front for a busy menu.
-- **The container image has not been built.** The `Dockerfile` and
-  `docker-compose.yml` were written and checked structurally, but no Docker
-  daemon was available in the environment they were authored in, so
-  `docker compose up --build` is unverified. Expect to iterate on the first
-  build — most likely on `better-sqlite3`'s native step.
+- **This app does not run on serverless hosts** (Vercel, Netlify Functions,
+  Cloudflare Workers). SQLite on local disk, Server-Sent Events and the
+  in-memory pub/sub and rate limiter all assume one long-lived process. A
+  zero-config Vercel deploy serves `public/` as static files and every
+  `/api/*` call 404s — it looks deployed and does nothing. Use a host that
+  keeps a Node process alive: Railway, Render, Fly.io, or any VPS with the
+  `Dockerfile`.
 - **Gross volume in the platform console** sums every tenant regardless of their
   own currency, so read it as a relative indicator, not an accounting figure.
 - **Arabic covers the interface, not restaurant data you have not translated.**
